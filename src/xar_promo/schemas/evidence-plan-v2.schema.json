@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:xar-promo:schema:evidence-plan:v2",
+  "title": "XAR Promo evidence sampling plan v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format_version", "kind", "sampling", "chapters", "samples"],
+  "properties": {
+    "format_version": {"const": 2},
+    "kind": {"const": "xar_promo_evidence_plan"},
+    "sampling": {"$ref": "#/$defs/sampling"},
+    "chapters": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/chapter"}
+    },
+    "samples": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/sample"}
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]{6}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "source_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "collection", "role", "path", "label", "bytes", "sha256"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "collection": {"enum": ["raw", "derived"]},
+        "role": {"$ref": "#/$defs/id"},
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\/$)(?!.*[\\u0000-\\u001f\\u007f])[^\\r\\n\\x00]+$(?![\\s\\S])"
+        },
+        "label": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "media_type": {"type": "string", "minLength": 1},
+        "source_name": {"type": "string", "minLength": 1}
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter_id", "tool", "tool_version", "operation", "execution"],
+      "properties": {
+        "adapter_id": {"$ref": "#/$defs/id"},
+        "tool": {"type": "string", "minLength": 1},
+        "tool_version": {"type": "string", "minLength": 1},
+        "operation": {"type": "string", "minLength": 1},
+        "execution": {"const": "external"}
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact", "producer"],
+      "properties": {
+        "artifact": {"$ref": "#/$defs/source_record"},
+        "producer": {"$ref": "#/$defs/producer"}
+      }
+    },
+    "roles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "producer_map": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/producer"}
+    },
+    "sampling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interval_seconds",
+        "timestamp_precision_decimal_places",
+        "endpoint_policy",
+        "deduplication_key",
+        "required_roles",
+        "external_producers"
+      ],
+      "properties": {
+        "interval_seconds": {"$ref": "#/$defs/timestamp"},
+        "timestamp_precision_decimal_places": {"const": 6},
+        "endpoint_policy": {"const": "include-start-and-end"},
+        "deduplication_key": {
+          "const": ["source_sha256", "timestamp_seconds"]
+        },
+        "required_roles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "external_producers": {"$ref": "#/$defs/producer_map"}
+      }
+    },
+    "chapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "source", "start_seconds", "end_seconds"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "kind": {"enum": ["video", "still"]},
+        "source": {"$ref": "#/$defs/binding"},
+        "start_seconds": {"$ref": "#/$defs/timestamp"},
+        "end_seconds": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_sha256",
+        "timestamp_seconds",
+        "chapter_ids",
+        "source_artifact_ids",
+        "required_roles"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "timestamp_seconds": {"$ref": "#/$defs/timestamp"},
+        "chapter_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "source_artifact_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "required_roles": {"$ref": "#/$defs/roles"},
+        "external_producers": {"$ref": "#/$defs/producer_map"}
+      }
+    }
+  }
+}

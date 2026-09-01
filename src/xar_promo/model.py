@@ -69,15 +69,31 @@ def _only_keys(value: Mapping[str, Any], allowed: set[str], context: str) -> Non
 
 
 def portable_relative_path(value: Any, context: str) -> str:
+    # A manifest path is part of the portable, hash-bound identity.  Do not
+    # let a host path library silently collapse spelling differences (for
+    # example ``a//b`` or a trailing slash) into a different identity.  The
+    # JSON schemas carry the same restrictions; keep this check here as the
+    # dependency-free runtime authority.
+    if isinstance(value, str) and any(
+        ord(character) < 0x20 or ord(character) == 0x7F for character in value
+    ):
+        raise ManifestError(f"{context} must not contain control characters")
     raw = _string(value, context)
     if "\\" in raw:
         raise ManifestError(f"{context} must use portable '/' separators")
     path = PurePosixPath(raw)
-    if path.is_absolute() or not path.parts or any(part in {"", ".", ".."} for part in path.parts):
+    normalized = path.as_posix()
+    if (
+        path.is_absolute()
+        or raw.startswith("//")
+        or not path.parts
+        or any(part in {"", ".", ".."} for part in path.parts)
+        or normalized != raw
+    ):
         raise ManifestError(f"{context} must be a normalized relative path")
     if re.match(r"^[A-Za-z]:", raw):
         raise ManifestError(f"{context} must not be a drive-qualified path")
-    return path.as_posix()
+    return normalized
 
 
 def _localized_text(value: Any, context: str, *, allow_empty: bool = False) -> dict[str, str]:

@@ -21,7 +21,9 @@ from xar_promo.evidence import (
     load_evidence_bundle,
     make_source_record,
     write_evidence_bundle,
+    write_evidence_bundle_v2,
     write_sampling_plan,
+    write_sampling_plan_v2,
 )
 from xar_promo.operations import initialize_project, preserve_artifact, record_signoff
 
@@ -258,6 +260,79 @@ class AuditEvidenceTests(unittest.TestCase):
         Path(submissions[0]["path"]).write_bytes(b"mutated after audit")
         with self.assertRaisesRegex(AuditError, "does not match"):
             verify_audit_report(report_path, project_root=self.root)
+
+    def test_v2_audit_reports_declared_roles_per_sample(self) -> None:
+        """The audit must not pretend a configurable-role bundle is frame/OCR."""
+
+        state_producer = {
+            "adapter_id": "generic-state",
+            "tool": "state-exporter",
+            "tool_version": "test-version",
+            "operation": "state-snapshot",
+            "execution": "external",
+        }
+        roles = ("frame.begin", "state.before")
+        plan_path = self.root / "artifacts" / "derived" / "evidence-plan-v2.json"
+        plan = write_sampling_plan_v2(
+            plan_path,
+            self.chapters[:1],
+            project_root=self.root,
+            interval_seconds=1,
+            required_roles=roles,
+            external_producers={
+                "frame.begin": self.frame_producer,
+                "state.before": state_producer,
+            },
+        )
+        submissions = []
+        for sample in plan["samples"]:
+            for role, producer, media_type in (
+                ("frame.begin", self.frame_producer, "image/png"),
+                ("state.before", state_producer, "application/json"),
+            ):
+                path = (
+                    self.root
+                    / "artifacts"
+                    / "derived"
+                    / "evidence-v2"
+                    / f"{sample['id']}-{role.replace('.', '-')}.bin"
+                )
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(f"{sample['id']}:{role}".encode("ascii"))
+                submissions.append(
+                    {
+                        "sample_id": sample["id"],
+                        "role": role,
+                        "path": path,
+                        "media_type": media_type,
+                        "producer": producer,
+                    }
+                )
+        bundle_path = self.root / "artifacts" / "derived" / "evidence-bundle-v2.json"
+        write_evidence_bundle_v2(
+            bundle_path,
+            project_root=self.root,
+            plan_path=plan_path,
+            submissions=submissions,
+        )
+        subject = self._subject()
+        report_path = self.root / "artifacts" / "derived" / "audit-report-v2.json"
+        report = write_audit_report(
+            report_path,
+            project_root=self.root,
+            subject=subject,
+            evidence_bundle_path=bundle_path,
+            created_at_utc="2026-09-01T00:00:00Z",
+        )
+        automated = report["automated_audit"]
+        self.assertEqual(list(roles), automated["required_roles"])
+        self.assertEqual(
+            {sample["id"]: list(roles) for sample in plan["samples"]},
+            automated["sample_required_roles"],
+        )
+        self.assertIn("required-role-coverage", automated["checks"])
+        self.assertNotIn("required-frame-and-ocr-coverage", automated["checks"])
+        verify_audit_report(report_path, project_root=self.root)
 
 
 if __name__ == "__main__":

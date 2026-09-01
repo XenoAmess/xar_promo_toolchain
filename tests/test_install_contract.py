@@ -29,6 +29,10 @@ EXPECTED_RESOURCES = (
     "xar_promo/schemas/promo-project-config-v1.schema.json",
     "xar_promo/schemas/promo-run-manifest-v1.schema.json",
     "xar_promo/schemas/phase2-capture-contract-v1.schema.json",
+    "xar_promo/schemas/capture-receipt-v1.schema.json",
+    "xar_promo/schemas/evidence-plan-v2.schema.json",
+    "xar_promo/schemas/evidence-bundle-v2.schema.json",
+    "xar_promo/schemas/claims-review-v1.schema.json",
 )
 
 

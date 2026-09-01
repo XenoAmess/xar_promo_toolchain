@@ -1,6 +1,6 @@
 # Installation and cross-machine delivery
 
-This guide installs `xar-promo-toolchain` 0.1.0 into an isolated Python
+This guide installs `xar-promo-toolchain` 0.2.0 into an isolated Python
 environment on Windows, Linux, or macOS. Python 3.11 or later is required. The
 core package has no mandatory third-party Python dependency; media, visual, and
 live speech capabilities are opt-in.
@@ -9,13 +9,13 @@ The machine-readable version of this contract is installed as
 `xar_promo/schemas/install-contract-v1.json`. It is part of both the wheel and
 sdist and can be read through `importlib.resources` without a source checkout.
 
-Version 0.1.0 is published as a signed-by-tag GitHub Release, but is **not published to PyPI or another public Python index**. A command such as
+Version 0.2.0 is prepared in source metadata and is **not published to PyPI or another public Python index** until a matching signed tag is released. A command such as
 `pip install xar-promo-toolchain` is therefore not an available distribution
 path. Install the release wheel directly, install a downloaded local artifact,
 or build from a reviewed trusted source checkout:
 
 ```text
-python -m pip install https://github.com/XenoAmess/xar_promo_toolchain/releases/download/v0.1.0/xar_promo_toolchain-0.1.0-py3-none-any.whl
+python -m pip install https://github.com/XenoAmess/xar_promo_toolchain/releases/download/v0.2.0/xar_promo_toolchain-0.2.0-py3-none-any.whl
 ```
 
 The standalone repository workflow
@@ -94,15 +94,15 @@ artifact source. Check the received bytes before installation:
 
 ```powershell
 # Windows PowerShell; compare the printed Hash with the independently supplied value
-Get-FileHash -Algorithm SHA256 .\dist\xar_promo_toolchain-0.1.0-py3-none-any.whl
+Get-FileHash -Algorithm SHA256 .\dist\xar_promo_toolchain-0.2.0-py3-none-any.whl
 ```
 
 ```sh
 # Linux
-sha256sum ./dist/xar_promo_toolchain-0.1.0-py3-none-any.whl
+sha256sum ./dist/xar_promo_toolchain-0.2.0-py3-none-any.whl
 
 # macOS
-shasum -a 256 ./dist/xar_promo_toolchain-0.1.0-py3-none-any.whl
+shasum -a 256 ./dist/xar_promo_toolchain-0.2.0-py3-none-any.whl
 ```
 
 Stop if the values differ. A digest detects changed transfer bytes; it does not
@@ -113,27 +113,27 @@ resulting digest before transferring the artifact.
 ### Wheel (recommended for transfer and offline use)
 
 ```powershell
-python -m pip install .\dist\xar_promo_toolchain-0.1.0-py3-none-any.whl
+python -m pip install .\dist\xar_promo_toolchain-0.2.0-py3-none-any.whl
 ```
 
 ```sh
-python -m pip install ./dist/xar_promo_toolchain-0.1.0-py3-none-any.whl
+python -m pip install ./dist/xar_promo_toolchain-0.2.0-py3-none-any.whl
 ```
 
-The wheel contains the Python package, the console entry point, the two native
-manifest schemas, the ZhongGuo phase-two capture-contract schema, and the
-installation contract. It does not bundle FFmpeg,
-ffprobe, a CK3 capture runner, a project composer, or a project integration
+The wheel contains the Python package, the console entry point, the native
+manifest schemas, the producer-neutral capture receipt, evidence plan/bundle v2,
+claims/review, and installation-contract schemas. It does not bundle FFmpeg,
+ffprobe, a CK3/STS2 capture runner, a project composer, or a project integration
 plugin.
 
 ### Source distribution
 
 ```powershell
-python -m pip install .\dist\xar_promo_toolchain-0.1.0.tar.gz
+python -m pip install .\dist\xar_promo_toolchain-0.2.0.tar.gz
 ```
 
 ```sh
-python -m pip install ./dist/xar_promo_toolchain-0.1.0.tar.gz
+python -m pip install ./dist/xar_promo_toolchain-0.2.0.tar.gz
 ```
 
 Installing an sdist builds a wheel locally and therefore needs its declared
@@ -167,9 +167,9 @@ obtain its wheel and all build requirements through the trusted wheelhouse
 process instead; installing the already-built toolchain wheel needs no build
 frontend.
 
-The expected 0.1.0 outputs are
-`dist/xar_promo_toolchain-0.1.0-py3-none-any.whl` and
-`dist/xar_promo_toolchain-0.1.0.tar.gz`.
+The expected 0.2.0 outputs are
+`dist/xar_promo_toolchain-0.2.0-py3-none-any.whl` and
+`dist/xar_promo_toolchain-0.2.0.tar.gz`.
 
 ## 3. Install only the optional capabilities you need
 
@@ -191,7 +191,7 @@ For a local wheel or sdist, install the artifact first and then install the
 exact optional requirements needed by that deployment:
 
 ```sh
-python -m pip install ./dist/xar_promo_toolchain-0.1.0-py3-none-any.whl
+python -m pip install ./dist/xar_promo_toolchain-0.2.0-py3-none-any.whl
 python -m pip install "edge-tts==7.2.8" "Pillow==12.3.0"
 ```
 
@@ -221,18 +221,18 @@ the same target OS, CPU architecture, and Python minor version. This matters
 because Pillow wheels are platform-specific.
 
 Start from a trusted source checkout or a local wheel whose SHA-256 has already
-been checked as described above. There is no public-index copy of version 0.1.0
-for pip to download.
+been checked as described above. There is no public-index copy of version 0.2.0
+for pip to download until a matching tagged release is published.
 
 ```powershell
 New-Item -ItemType Directory -Force wheelhouse | Out-Null
-Copy-Item .\dist\xar_promo_toolchain-0.1.0-py3-none-any.whl wheelhouse\
+Copy-Item .\dist\xar_promo_toolchain-0.2.0-py3-none-any.whl wheelhouse\
 python -m pip download --dest wheelhouse "edge-tts==7.2.8" "Pillow==12.3.0"
 ```
 
 ```sh
 mkdir -p wheelhouse
-cp ./dist/xar_promo_toolchain-0.1.0-py3-none-any.whl wheelhouse/
+cp ./dist/xar_promo_toolchain-0.2.0-py3-none-any.whl wheelhouse/
 python -m pip download --dest wheelhouse "edge-tts==7.2.8" "Pillow==12.3.0"
 ```
 
@@ -240,7 +240,7 @@ Transfer the whole directory, then install without index access:
 
 ```sh
 python -m pip install --no-index --find-links ./wheelhouse \
-  "xar-promo-toolchain[tts,visual,render]==0.1.0"
+  "xar-promo-toolchain[tts,visual,render]==0.2.0"
 ```
 
 The distribution requirement in this command is resolved only from the local
@@ -261,10 +261,10 @@ First verify both public launch paths and the installed resources:
 ```sh
 xar-promo --version
 python -m xar_promo --version
-python -c "from importlib.resources import files; root=files('xar_promo').joinpath('schemas'); names=('install-contract-v1.json','promo-project-config-v1.schema.json','promo-run-manifest-v1.schema.json','phase2-capture-contract-v1.schema.json'); missing=[name for name in names if not root.joinpath(name).is_file()]; raise SystemExit('missing installed resources: '+','.join(missing) if missing else 0)"
+python -c "from importlib.resources import files; root=files('xar_promo').joinpath('schemas'); names=('install-contract-v1.json','promo-project-config-v1.schema.json','promo-run-manifest-v1.schema.json','phase2-capture-contract-v1.schema.json','capture-receipt-v1.schema.json','evidence-plan-v2.schema.json','evidence-bundle-v2.schema.json','claims-review-v1.schema.json'); missing=[name for name in names if not root.joinpath(name).is_file()]; raise SystemExit('missing installed resources: '+','.join(missing) if missing else 0)"
 ```
 
-Both version commands must print `xar-promo 0.1.0`. Verify all ten commands on
+Both version commands must print `xar-promo 0.2.0`. Verify all ten commands on
 Windows PowerShell:
 
 ```powershell
@@ -295,12 +295,28 @@ The JSON contract carries the canonical command list, dependency/extras map,
 artifact names, verification argv, and side-effect boundaries. Automation
 should parse that resource instead of scraping this Markdown file.
 
-## 6. CK3 adapter and project preset boundaries
+For the reusable v0.2 contracts and their project boundary, see
+[Generic capture, evidence, audio, and claims contracts](capture-evidence-audio-claims.md).
 
-The installed package contains reusable CK3 capture-verification code. That
-adapter is read-only: it validates an already-produced capture bundle and does
-not launch CK3, record the desktop, drive input, repair evidence, or interpret
-OCR. A CK3 acceptance/capture runner remains an upstream producer.
+## 6. Adapter, capture, and project preset boundaries
+
+The installed package contains reusable CK3 capture-verification code and the
+generic capture/evidence contracts. Adapters are read-only: they validate
+already-produced capture receipts/bundles and do not launch CK3 or STS2, record
+the desktop, drive input, repair evidence, or execute OCR. A game acceptance or
+capture runner remains an upstream producer.
+
+The generic receipt validates producer identity, exact source bytes, ordered
+marks, clean-span bounds, and evidence references. Evidence plan/bundle v2 can
+declare roles per sample. A project may add state/action/tooltip artifacts, but
+their semantic meaning and claim validator stay outside the package. Likewise,
+the claims/review sidecar validates reference and deliverable bindings without
+deciding whether a product statement is true.
+
+For multi-track projects, the composer can pass typed narration/game/BGM/SFX
+stems through the audio planner. xAR records deterministic trim, delay, gain,
+fade, duck, and FFmpeg plan details; the project chooses music rights, voice,
+language, loudness, and artistic policy.
 
 Project policy is a separate layer. A project preset may define chapter order,
 voice, subtitles, visual identity, duration, real-character requirements, and

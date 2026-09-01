@@ -166,7 +166,29 @@ def _automated_result(
             for entry in bundle["entries"]
         }
     )
-    return {
+    # v1 reports deliberately retain their original fixed-role shape so old
+    # manifests and downstream parsers remain byte-compatible.  v2 plans
+    # declare roles per sample; report the effective union and the exact
+    # per-sample map instead of pretending every sample has frame/OCR.
+    if plan.get("format_version") == 1:
+        required_roles: list[str] = list(REQUIRED_EVIDENCE_ROLES)
+        sample_required_roles: dict[str, list[str]] | None = None
+        coverage_check = "required-frame-and-ocr-coverage"
+    else:
+        role_rows = {
+            str(sample["id"]): sorted(
+                str(role) for role in sample.get("required_roles", ())
+            )
+            for sample in plan.get("samples", ())
+        }
+        required_roles = sorted(
+            {role for roles in role_rows.values() for role in roles}
+        )
+        sample_required_roles = {
+            sample_id: role_rows[sample_id] for sample_id in sorted(role_rows)
+        }
+        coverage_check = "required-role-coverage"
+    result = {
         "status": "passed",
         "scope": "artifact-integrity-and-evidence-completeness",
         "manual_approval_granted": False,
@@ -176,7 +198,7 @@ def _automated_result(
         "evidence_plan_sha256": bundle["plan"]["sha256"],
         "sample_count": len(plan["samples"]),
         "evidence_artifact_count": len(bundle["entries"]),
-        "required_roles": list(REQUIRED_EVIDENCE_ROLES),
+        "required_roles": required_roles,
         "external_producers": [
             {
                 "adapter_id": adapter_id,
@@ -190,11 +212,14 @@ def _automated_result(
             "subject-bytes-and-sha256",
             "sampling-plan-bytes-and-sha256",
             "source-bytes-and-sha256",
-            "required-frame-and-ocr-coverage",
+            coverage_check,
             "evidence-bytes-and-sha256",
             "external-producer-metadata",
         ],
     }
+    if sample_required_roles is not None:
+        result["sample_required_roles"] = sample_required_roles
+    return result
 
 
 def write_audit_report(

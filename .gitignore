@@ -1,5 +1,6 @@
 build/
 dist/
+.work/
 *.egg-info/
 __pycache__/
 *.py[cod]

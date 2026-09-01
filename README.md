@@ -1,6 +1,6 @@
 # XAR Promo Toolchain
 
-`xar-promo-toolchain` is a reusable foundation for promotional-video pipelines. Version `0.1.0` provides separate project/run contracts, immutable process-material retention, provider-neutral TTS, dependency-injected media orchestration, automated-audit and human-review boundaries, and offline release-bundle export. A project supplies its own adapter, preset, and `PipelineComposer`; this is an orchestration toolchain, not a timeline editor or upload service.
+`xar-promo-toolchain` is a reusable foundation for promotional-video pipelines. Version `0.2.0` adds producer-neutral capture receipts, configurable evidence roles, structural claim/review bindings, and multi-track audio planning while retaining the separate project/run contracts, immutable process-material retention, provider-neutral TTS, dependency-injected media orchestration, automated-audit and human-review boundaries, and offline release-bundle export. A project supplies its own adapter, preset, and `PipelineComposer`; this is an orchestration toolchain, not a recorder, OCR engine, timeline editor, or upload service.
 
 The real CLI has ten commands:
 
@@ -17,16 +17,24 @@ The real CLI has ten commands:
 
 There is no `publish` or upload command. `audit`, `review`, and `signoff` are intentionally separate operations.
 
+### 0.2.0 status
+
+The 0.2.0 source contract is prepared but unreleased. It adds generic capture
+receipts, evidence-plan/bundle v2, structural claims and review sidecars, and
+multi-track audio planning. A release tag must pass the compatibility,
+wheel/sdist, and installed-resource checks before any integration pins it as a
+published artifact.
+
 ## Release artifact handoff
 
 The release workflow builds and checks the wheel and source distribution,
 validates the sdist contents, performs isolated installs of both artifacts,
 writes `SHA256SUMS`, and uploads the checked files as a GitHub Actions artifact.
 For a `v<version>` tag it also publishes those exact files as a GitHub Release;
-a manual workflow run remains artifact-only. Version 0.1.0 is available from
-the [GitHub Release](https://github.com/XenoAmess/xar_promo_toolchain/releases/tag/v0.1.0).
-The workflow does not publish to PyPI or another package index, upload media, or
-start CK3/FFmpeg. See
+manual workflow runs remain artifact-only. Version 0.2.0 is prepared in the
+source metadata; it is not published until a matching `v0.2.0` tag passes the
+workflow. The workflow does not publish to PyPI or another package index, upload
+media, or start a game/recorder. See
 [Installation and cross-machine delivery](docs/installation.md) for the exact
 artifact, reproducibility, and trust boundaries.
 
@@ -91,6 +99,30 @@ xar-promo start-run C:\work\my-promo\promo-project.json --run-id render-001
 ```
 
 `promo-project.json` owns intent: project identity, adapter/preset IDs, locales, constraints, chapters, and cues. `runs/<id>/run-manifest.json` is an append-only evidence ledger containing a config snapshot binding, typed phase history, immutable artifacts, typed automated audits, and explicit human sign-offs. Every mutation archives the prior manifest bytes before atomic replacement.
+
+## Capture, evidence, audio, and claims boundary
+
+Version 0.2.0 keeps capture production and product meaning outside the generic
+package. A project or external recorder emits a hash-bound
+`xar-promo-capture-receipt`; xAR validates its producer metadata, source bytes,
+ordered marks, clean spans, and evidence references. It does not launch a game,
+record a window, run OCR, or decide whether a span demonstrates a claim.
+
+Evidence plans can use v2 roles per sample instead of the historical fixed
+`frame`/`ocr` pair. A project may therefore bind roles such as
+`state.before`, `state.after`, or `action.receipt` while keeping their meaning
+in a project-owned validator. `claims-review-v1` provides structural
+`claim_id`/evidence/validator bindings and review checklists; it never converts
+an automated result into a human approval.
+
+The multi-track audio planner accepts typed narration, gameplay, BGM, and SFX
+stems with trim, delay, gain, fade, and deterministic ducking. Music choice,
+rights, voice, language, loudness policy, and aesthetic decisions remain in the
+project composer. The old single-audio render API and `PipelineComposer` ABI
+remain compatible.
+
+See [Generic capture, evidence, audio, and claims contracts](docs/capture-evidence-audio-claims.md)
+for the schema resources, migration rules, and integration boundary.
 
 ## Plan and build
 
@@ -197,7 +229,7 @@ Preservation copies; it never moves, edits, or deletes source material. Failed a
 
 ## Reusable layers
 
-- `src/xar_promo/` contains models, validation, typed runlog operations, retention, TTS, storyboard, visual-source, media/layout, pipeline, review, audit, and export primitives.
+- `src/xar_promo/` contains models, validation, typed runlog operations, retention, capture/evidence/claims contracts, TTS, storyboard, visual-source, media/layout, pipeline, review, audit, and export primitives.
 - `src/xar_promo/adapters/` contains domain adapters. The CK3 adapter verifies an existing capture bundle without OCR interpretation or mutation.
 - `src/xar_promo/presets/` isolates project policy from the generic core and adapters.
 

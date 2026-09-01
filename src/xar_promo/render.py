@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Sequence
 
+from .audio import AudioMixSpec, plan_audio_mix
 from .errors import PromoToolchainError
 from .process import CommandResult, CommandSpec, run_command
 
@@ -155,6 +156,51 @@ def build_filtergraph(
     )
 
 
+def build_multitrack_filtergraph(
+    options: RenderOptions,
+    audio_mix: AudioMixSpec,
+    *,
+    ass_path: str | os.PathLike[str] | None = None,
+) -> str:
+    """Build a video graph followed by a typed multi-track audio graph.
+
+    Input ``0`` is always the visual.  Audio stems are appended in their
+    declared order and therefore begin at input ``1``.  The existing
+    :func:`build_filtergraph` remains byte-for-byte compatible for the legacy
+    one-audio-input path.
+    """
+
+    duration = seconds(options.duration_seconds)
+    video_filters = [
+        f"trim=duration={duration}",
+        "setpts=PTS-STARTPTS",
+        (
+            f"scale={options.width}:{options.height}:"
+            "force_original_aspect_ratio=decrease:flags=lanczos"
+        ),
+        (
+            f"pad={options.width}:{options.height}:(ow-iw)/2:(oh-ih)/2:"
+            f"color={options.pad_color}"
+        ),
+        "setsar=1",
+        f"fps={options.fps}",
+        f"tpad=stop_mode=clone:stop_duration={duration}",
+        f"trim=duration={duration}",
+    ]
+    if ass_path is not None:
+        video_filters.append(ass_burn_in_filter(ass_path))
+    video_filters.append(f"format={options.pixel_format}")
+    audio_plan = plan_audio_mix(
+        audio_mix,
+        duration_seconds=options.duration_seconds,
+        sample_rate=options.audio_sample_rate,
+        channels=options.audio_channels,
+        input_start_index=1,
+        output_label="a",
+    )
+    return "[0:v]" + ",".join(video_filters) + "[v];" + audio_plan.filtergraph
+
+
 def _safe_concat_path(path: Path) -> str:
     value = path.as_posix()
     if not value or any(character in value for character in ("\x00", "\n", "\r", "'")):
@@ -202,14 +248,24 @@ def plan_render(
     ass_path: Path | None = None,
     start_seconds: float = 0.0,
     working_directory: Path | None = None,
+    audio_mix: AudioMixSpec | None = None,
 ) -> RenderPlan:
-    """Plan one normalized video/audio encode with optional ASS burn-in."""
+    """Plan one normalized video/audio encode with optional ASS burn-in.
+
+    ``audio_mix`` is an additive compatibility seam.  When omitted, the
+    original two-input command and filtergraph are generated unchanged.  When
+    supplied, each declared stem becomes an additional ``-i`` input and the
+    generic deterministic mixer is used.
+    """
 
     cwd = None if working_directory is None else Path(working_directory)
     effective_partial = _effective_path(Path(partial_output), cwd)
     effective_final = _effective_path(Path(final_output), cwd)
     start = seconds(start_seconds)
-    graph = build_filtergraph(options, ass_path=ass_path)
+    if audio_mix is None:
+        graph = build_filtergraph(options, ass_path=ass_path)
+    else:
+        graph = build_multitrack_filtergraph(options, audio_mix, ass_path=ass_path)
     argv: list[str | os.PathLike[str]] = [
         ffmpeg,
         "-nostdin",
@@ -220,12 +276,16 @@ def plan_render(
     ]
     if start_seconds != 0:
         argv.extend(("-ss", start))
+    argv.extend(("-i", video_input))
+    if audio_mix is None:
+        argv.extend(("-i", audio_input))
+    else:
+        # Keep the stem ordering stable: it is part of the filtergraph ABI and
+        # must remain visible in the recorded shell-free command.
+        for stem in audio_mix.stems:
+            argv.extend(("-i", stem.path))
     argv.extend(
         (
-            "-i",
-            video_input,
-            "-i",
-            audio_input,
             "-filter_complex",
             graph,
             "-map",
@@ -266,6 +326,43 @@ def plan_render(
         generated_files=(),
         partial_output=effective_partial,
         final_output=effective_final,
+    )
+
+
+def plan_render_multitrack(
+    *,
+    ffmpeg: str | os.PathLike[str],
+    video_input: Path,
+    audio_mix: AudioMixSpec,
+    partial_output: Path,
+    final_output: Path,
+    audit_directory: Path,
+    options: RenderOptions,
+    ass_path: Path | None = None,
+    start_seconds: float = 0.0,
+    working_directory: Path | None = None,
+) -> RenderPlan:
+    """Explicit multi-track alias for :func:`plan_render`.
+
+    The alias is useful to project composers that want to make the policy
+    visible while retaining the established ``plan_render`` ABI for existing
+    callers.
+    """
+
+    return plan_render(
+        ffmpeg=ffmpeg,
+        video_input=video_input,
+        # Legacy ``audio_input`` is ignored by the multi-track branch, but a
+        # stable placeholder keeps the implementation in one code path.
+        audio_input=Path("unused-audio-input"),
+        partial_output=partial_output,
+        final_output=final_output,
+        audit_directory=audit_directory,
+        options=options,
+        ass_path=ass_path,
+        start_seconds=start_seconds,
+        working_directory=working_directory,
+        audio_mix=audio_mix,
     )
 
 
@@ -386,10 +483,12 @@ __all__ = [
     "RenderPlanError",
     "ass_burn_in_filter",
     "build_filtergraph",
+    "build_multitrack_filtergraph",
     "concat_manifest",
     "escape_filter_value",
     "execute_render_plan",
     "plan_concat",
     "plan_render",
+    "plan_render_multitrack",
     "seconds",
 ]

@@ -22,6 +22,7 @@ from pathlib import Path, PurePath
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, Protocol, Sequence, runtime_checkable
 
+from .audio import AudioMixError, AudioMixSpec, validate_audio_mix
 from .errors import PromoToolchainError
 from .model import ProjectConfig, RunManifest, SourceRecord
 from .process import CommandResult
@@ -136,6 +137,8 @@ class SegmentDraft:
     ``prepared_narration`` is the compatibility seam for legacy builders whose
     filenames, caches, and monkey-patch targets are observable contracts.  When it
     is present, neither ``narration_resolver`` nor the new TTS cache is touched.
+    ``audio_mix`` is optional; when present it supplies additional already-
+    prepared stems to the render planner without changing the composer ABI.
     """
 
     segment_id: str
@@ -145,6 +148,7 @@ class SegmentDraft:
     narration_request: TtsRequest | None = None
     prepared_narration: Path | None = None
     start_seconds: float = 0.0
+    audio_mix: AudioMixSpec | None = None
 
     def __post_init__(self) -> None:
         _identifier(self.segment_id, "segment_id")
@@ -167,6 +171,10 @@ class SegmentDraft:
         ):
             raise PipelineValidationError(
                 f"segment {self.segment_id} start_seconds must be finite and non-negative"
+            )
+        if self.audio_mix is not None and not isinstance(self.audio_mix, AudioMixSpec):
+            raise PipelineValidationError(
+                f"segment {self.segment_id} audio_mix must be an AudioMixSpec"
             )
 
 
@@ -493,6 +501,21 @@ def _validate_draft(
                 f"segment.{segment_id}",
             }
         )
+    for segment in draft.segments:
+        if segment.audio_mix is not None:
+            for stem in segment.audio_mix.stems:
+                stem_artifact_id = f"audio.{segment.segment_id}.{stem.stem_id}"
+                if not _IDENTIFIER.fullmatch(stem_artifact_id):
+                    raise PipelineValidationError(
+                        "audio stem artifact id must be a portable identifier of at most 128 characters: "
+                        f"{stem_artifact_id}"
+                    )
+                if stem_artifact_id in automatic_artifact_ids:
+                    raise PipelineValidationError(
+                        "audio stem artifact id conflicts with a pipeline-owned artifact id: "
+                        f"{stem_artifact_id}"
+                    )
+                automatic_artifact_ids.add(stem_artifact_id)
     if draft.deliverable_artifact_id in automatic_artifact_ids:
         raise PipelineValidationError(
             "deliverable_artifact_id conflicts with a pipeline-owned artifact id: "
@@ -530,6 +553,26 @@ def _validate_draft(
             raise PipelineValidationError(
                 f"segment {segment.segment_id} needs TTS cache/provider or a resolver"
             )
+        if segment.audio_mix is not None:
+            try:
+                validate_audio_mix(
+                    segment.audio_mix,
+                    duration_seconds=segment.render_options.duration_seconds,
+                )
+            except AudioMixError as exc:
+                raise PipelineValidationError(
+                    f"segment {segment.segment_id} audio_mix is invalid: {exc}"
+                ) from exc
+            # Audio stems are already-produced inputs (there is deliberately
+            # no generic recorder/resolver seam).  A validate-only invocation
+            # may read their metadata, but must fail closed when a declared
+            # source is absent rather than producing a plan that cannot run.
+            for stem in segment.audio_mix.stems:
+                stem_path = stem.path.expanduser().resolve()
+                if not stem_path.is_file():
+                    raise PipelineValidationError(
+                        f"audio stem {stem.stem_id!r} is missing: {stem_path}"
+                    )
     if not callable(dependencies.subtitle_renderer):
         raise PipelineValidationError("subtitle_renderer must be callable")
     if not callable(dependencies.visual_probe):
@@ -887,7 +930,40 @@ def run_pipeline(
             phases=phases,
             artifacts=artifacts,
         )
-    _phase(phases, "narration", "succeeded", artifacts=narration_records)
+    audio_stem_records: list[PipelineArtifactRecord] = []
+    try:
+        for segment in draft.segments:
+            if segment.audio_mix is None:
+                continue
+            for stem in segment.audio_mix.stems:
+                stem_path = stem.path.resolve()
+                if not stem_path.is_file():
+                    raise PipelineValidationError(
+                        f"audio stem {stem.stem_id!r} is missing: {stem_path}"
+                    )
+                record = PipelineArtifactRecord.from_path(
+                    stem_path,
+                    artifact_id=f"audio.{segment.segment_id}.{stem.stem_id}",
+                    role="audio-stem",
+                    media_type=_media_type(stem_path, "audio/octet-stream"),
+                )
+                audio_stem_records.append(record)
+                artifacts.append(record)
+    except Exception as error:
+        return _failed_result(
+            error,
+            phase="narration",
+            validate_only=False,
+            workdir=attempt_root,
+            phases=phases,
+            artifacts=artifacts,
+        )
+    _phase(
+        phases,
+        "narration",
+        "succeeded",
+        artifacts=tuple(narration_records) + tuple(audio_stem_records),
+    )
 
     subtitle_paths: dict[str, Path] = {}
     subtitle_records: list[PipelineArtifactRecord] = []
@@ -924,21 +1000,27 @@ def run_pipeline(
     try:
         for segment in draft.segments:
             _, partial_path, final_path = output_paths[segment.segment_id]
-            plans[segment.segment_id] = dependencies.render_planner(
-                ffmpeg=dependencies.ffmpeg,
-                video_input=visuals[segment.segment_id].path.resolve(),
-                audio_input=narrations[segment.segment_id].path.resolve(),
-                partial_output=partial_path,
-                final_output=final_path,
-                audit_directory=attempt_root
+            render_kwargs: dict[str, object] = {
+                "ffmpeg": dependencies.ffmpeg,
+                "video_input": visuals[segment.segment_id].path.resolve(),
+                "audio_input": narrations[segment.segment_id].path.resolve(),
+                "partial_output": partial_path,
+                "final_output": final_path,
+                "audit_directory": attempt_root
                 / "audit"
                 / "segments"
                 / segment.segment_id,
-                options=segment.render_options,
-                ass_path=subtitle_paths[segment.segment_id],
-                start_seconds=float(segment.start_seconds),
-                working_directory=attempt_root,
-            )
+                "options": segment.render_options,
+                "ass_path": subtitle_paths[segment.segment_id],
+                "start_seconds": float(segment.start_seconds),
+                "working_directory": attempt_root,
+            }
+            # Preserve the old custom-planner call shape when a segment does
+            # not opt into mixing.  New planners receive the typed spec only
+            # for opted-in segments, so legacy composers remain ABI-compatible.
+            if segment.audio_mix is not None:
+                render_kwargs["audio_mix"] = segment.audio_mix
+            plans[segment.segment_id] = dependencies.render_planner(**render_kwargs)
     except Exception as error:
         return _failed_result(
             error,

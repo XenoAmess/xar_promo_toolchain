@@ -11,16 +11,16 @@
     "run": {"type": "object", "additionalProperties": false, "required": ["id"], "properties": {"id": {"$ref": "#/$defs/id"}}},
     "project_config": {
       "type": "object", "additionalProperties": false, "required": ["path", "bytes", "sha256"],
-      "properties": {"path": {"type": "string", "minLength": 1, "allOf": [{"pattern": "^(?!/)(?![A-Za-z]:).+$"}, {"not": {"pattern": "\\\\"}}, {"not": {"pattern": "(^|/)\\.\\.?(/|$)"}}]}, "bytes": {"type": "integer", "minimum": 0}, "sha256": {"$ref": "#/$defs/sha"}}
+      "properties": {"path": {"$ref": "#/$defs/portable_path"}, "bytes": {"type": "integer", "minimum": 0}, "sha256": {"$ref": "#/$defs/sha"}}
     },
     "artifact_policy": {
       "type": "object", "additionalProperties": false,
       "required": ["strategy", "raw_directory", "derived_directory", "manifest_history_directory", "preserve_process_material"],
       "properties": {
         "strategy": {"const": "append-only-content-addressed"},
-        "raw_directory": {"type": "string", "minLength": 1},
-        "derived_directory": {"type": "string", "minLength": 1},
-        "manifest_history_directory": {"type": "string", "minLength": 1},
+        "raw_directory": {"$ref": "#/$defs/portable_path"},
+        "derived_directory": {"$ref": "#/$defs/portable_path"},
+        "manifest_history_directory": {"$ref": "#/$defs/portable_path"},
         "preserve_process_material": {"const": true}
       }
     },
@@ -32,12 +32,17 @@
   "$defs": {
     "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
     "sha": {"type": "string", "pattern": "^[0-9A-Fa-f]{64}$"},
+    "portable_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\/$)(?!.*[\\u0000-\\u001f\\u007f])[^\\r\\n\\x00]+$(?![\\s\\S])"
+    },
     "artifact": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "collection", "role", "path", "label", "bytes", "sha256"],
       "properties": {
         "id": {"$ref": "#/$defs/id"}, "collection": {"enum": ["raw", "derived"]}, "role": {"$ref": "#/$defs/id"},
-        "path": {"type": "string", "minLength": 1}, "label": {"type": "string", "minLength": 1}, "bytes": {"type": "integer", "minimum": 0},
+        "path": {"$ref": "#/$defs/portable_path"}, "label": {"type": "string", "minLength": 1}, "bytes": {"type": "integer", "minimum": 0},
         "sha256": {"$ref": "#/$defs/sha"}, "media_type": {"type": "string", "minLength": 1}, "source_name": {"type": "string", "minLength": 1}
       }
     },

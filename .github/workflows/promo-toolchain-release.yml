@@ -92,11 +92,16 @@ jobs:
               "README.md",
               "pyproject.toml",
               "docs/installation.md",
+              "docs/capture-evidence-audio-claims.md",
               "src/xar_promo/__init__.py",
               "src/xar_promo/schemas/install-contract-v1.json",
               "src/xar_promo/schemas/promo-project-config-v1.schema.json",
               "src/xar_promo/schemas/promo-run-manifest-v1.schema.json",
               "src/xar_promo/schemas/phase2-capture-contract-v1.schema.json",
+              "src/xar_promo/schemas/capture-receipt-v1.schema.json",
+              "src/xar_promo/schemas/evidence-plan-v2.schema.json",
+              "src/xar_promo/schemas/evidence-bundle-v2.schema.json",
+              "src/xar_promo/schemas/claims-review-v1.schema.json",
           }
           assert required <= relative, sorted(required - relative)
           forbidden_parts = {".github", "artifacts", "build", "dist", "mod_zhongguo_style"}
@@ -125,7 +130,7 @@ jobs:
           [[ "$("$VENV_DIR/bin/xar-promo" --version)" == "xar-promo $expected_version" ]]
           [[ "$("$VENV_DIR/bin/python" -m xar_promo --version)" == "xar-promo $expected_version" ]]
           "$VENV_DIR/bin/python" -m pip check
-          "$VENV_DIR/bin/python" -c 'from importlib.resources import files; import json; root=files("xar_promo").joinpath("schemas"); names=("install-contract-v1.json", "promo-project-config-v1.schema.json", "promo-run-manifest-v1.schema.json", "phase2-capture-contract-v1.schema.json"); missing=[name for name in names if not root.joinpath(name).is_file()]; assert not missing, missing; [json.loads(root.joinpath(name).read_text(encoding="utf-8")) for name in names]'
+          "$VENV_DIR/bin/python" -c 'from importlib.resources import files; import json; root=files("xar_promo").joinpath("schemas"); names=("install-contract-v1.json", "promo-project-config-v1.schema.json", "promo-run-manifest-v1.schema.json", "phase2-capture-contract-v1.schema.json", "capture-receipt-v1.schema.json", "evidence-plan-v2.schema.json", "evidence-bundle-v2.schema.json", "claims-review-v1.schema.json"); missing=[name for name in names if not root.joinpath(name).is_file()]; assert not missing, missing; [json.loads(root.joinpath(name).read_text(encoding="utf-8")) for name in names]'
           for command in init start-run validate preserve signoff plan build audit review export; do
             "$VENV_DIR/bin/xar-promo" "$command" --help > /dev/null
           done
@@ -149,7 +154,7 @@ jobs:
           [[ "$("$VENV_DIR/bin/xar-promo" --version)" == "xar-promo $expected_version" ]]
           [[ "$("$VENV_DIR/bin/python" -m xar_promo --version)" == "xar-promo $expected_version" ]]
           "$VENV_DIR/bin/python" -m pip check
-          "$VENV_DIR/bin/python" -c 'from importlib.resources import files; import json; root=files("xar_promo").joinpath("schemas"); names=("install-contract-v1.json", "promo-project-config-v1.schema.json", "promo-run-manifest-v1.schema.json", "phase2-capture-contract-v1.schema.json"); missing=[name for name in names if not root.joinpath(name).is_file()]; assert not missing, missing; [json.loads(root.joinpath(name).read_text(encoding="utf-8")) for name in names]'
+          "$VENV_DIR/bin/python" -c 'from importlib.resources import files; import json; root=files("xar_promo").joinpath("schemas"); names=("install-contract-v1.json", "promo-project-config-v1.schema.json", "promo-run-manifest-v1.schema.json", "phase2-capture-contract-v1.schema.json", "capture-receipt-v1.schema.json", "evidence-plan-v2.schema.json", "evidence-bundle-v2.schema.json", "claims-review-v1.schema.json"); missing=[name for name in names if not root.joinpath(name).is_file()]; assert not missing, missing; [json.loads(root.joinpath(name).read_text(encoding="utf-8")) for name in names]'
           for command in init start-run validate preserve signoff plan build audit review export; do
             "$VENV_DIR/bin/xar-promo" "$command" --help > /dev/null
           done

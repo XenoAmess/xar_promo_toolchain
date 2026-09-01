@@ -4,7 +4,7 @@
   "package": {
     "distribution_name": "xar-promo-toolchain",
     "import_name": "xar_promo",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "python_requires": ">=3.11",
     "build_backend": "setuptools.build_meta",
     "license": "GPL-3.0-only"
@@ -99,11 +99,11 @@
   },
   "artifacts": {
     "wheel": {
-      "filename": "xar_promo_toolchain-0.1.0-py3-none-any.whl",
+      "filename": "xar_promo_toolchain-0.2.0-py3-none-any.whl",
       "installable": true
     },
     "sdist": {
-      "filename": "xar_promo_toolchain-0.1.0.tar.gz",
+      "filename": "xar_promo_toolchain-0.2.0.tar.gz",
       "installable": true
     },
     "source_tree": {
@@ -115,11 +115,16 @@
       "xar_promo/schemas/install-contract-v1.json",
       "xar_promo/schemas/promo-project-config-v1.schema.json",
       "xar_promo/schemas/promo-run-manifest-v1.schema.json",
-      "xar_promo/schemas/phase2-capture-contract-v1.schema.json"
+      "xar_promo/schemas/phase2-capture-contract-v1.schema.json",
+      "xar_promo/schemas/capture-receipt-v1.schema.json",
+      "xar_promo/schemas/evidence-plan-v2.schema.json",
+      "xar_promo/schemas/evidence-bundle-v2.schema.json",
+      "xar_promo/schemas/claims-review-v1.schema.json"
     ],
     "source_documentation": [
       "README.md",
-      "docs/installation.md"
+      "docs/installation.md",
+      "docs/capture-evidence-audio-claims.md"
     ]
   },
   "verification": {
@@ -162,7 +167,7 @@
         "argv": [
           "python",
           "-c",
-          "from importlib.resources import files; root=files('xar_promo').joinpath('schemas'); names=('install-contract-v1.json','promo-project-config-v1.schema.json','promo-run-manifest-v1.schema.json','phase2-capture-contract-v1.schema.json'); missing=[name for name in names if not root.joinpath(name).is_file()]; raise SystemExit('missing installed resources: '+','.join(missing) if missing else 0)"
+          "from importlib.resources import files; root=files('xar_promo').joinpath('schemas'); names=('install-contract-v1.json','promo-project-config-v1.schema.json','promo-run-manifest-v1.schema.json','phase2-capture-contract-v1.schema.json','capture-receipt-v1.schema.json','evidence-plan-v2.schema.json','evidence-bundle-v2.schema.json','claims-review-v1.schema.json'); missing=[name for name in names if not root.joinpath(name).is_file()]; raise SystemExit('missing installed resources: '+','.join(missing) if missing else 0)"
         ],
         "expected_exit_code": 0,
         "project_writes": false
@@ -275,7 +280,7 @@
         "the selected virtual environment or interpreter site-packages",
         "pip and build-tool caches"
       ],
-      "network_by_default": "dependency resolution may contact configured indexes unless --no-index is used; version 0.1.0 itself is not published on a public Python index"
+      "network_by_default": "dependency resolution may contact configured indexes unless --no-index is used; version 0.2.0 is not published on a public Python index until a matching signed tag is released"
     },
     "verification": {
       "project_writes": false,

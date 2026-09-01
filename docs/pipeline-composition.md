@@ -23,8 +23,9 @@ run_invocation / run_pipeline
 attempt-local result -> artifact preservation -> canonical runlog -> audit -> human sign-off
 ```
 
-The generic pipeline never publishes, uploads, mutates a `RunManifest`, records an
-automated audit as passed, or creates a human sign-off.
+The generic pipeline never publishes, uploads, records a capture, executes OCR,
+mutates a `RunManifest`, records an automated audit as passed, or creates a
+human sign-off. Capture producers and semantic validators remain project-owned.
 
 ## Composition ABI
 
@@ -119,6 +120,31 @@ subtitle_renderer(
     workdir: Path,
 ) -> str
 ```
+
+## Capture, evidence, claims, and audio inputs
+
+An integration may feed the composer from a producer-neutral
+`xar_promo.capture.CaptureReceipt`. The receipt is loaded and hash-checked
+before its clean spans become `VisualSource` instances. This projection is
+where a project maps its own shot IDs and semantics; the generic pipeline only
+sees valid paths, time ranges, and immutable evidence references.
+
+Evidence plan/bundle v2 permits each sample to declare its own required roles.
+The pipeline does not interpret role payloads or run OCR. A project can bind
+state/action/tooltip artifacts and later run a project validator; xAR's claims
+and review contracts only check IDs, references, producer metadata, and exact
+deliverable hashes.
+
+For projects with independent audio sources, the optional multi-track planner
+accepts typed stems and deterministic trim/delay/gain/fade/duck operations. The
+composer remains responsible for choosing stems, rights, language, voice, and
+the artistic mix. The existing single-audio `RenderOptions` path is unchanged,
+so a composer can migrate one segment or an entire project incrementally.
+
+None of these inputs changes the `PipelineComposer` callable ABI. A composer
+still returns a `PipelineInvocation`; it must not add game-specific fields to
+generic schemas or make external capture/OCR/network calls during
+`validate_only=True`.
 
 ## Canonical visual sources
 
@@ -381,6 +407,18 @@ preserves all completed outputs and appends typed `build.*` phase rows. A RED
 build exits `2` but still preserves completed artifacts, partial outputs,
 stdout/stderr, and other retained evidence before appending the corresponding
 typed phase rows. Neither result records human sign-off.
+
+For a project integration, the recommended sequence is:
+
+```text
+external producer -> CaptureReceipt -> adapter semantic validation
+  -> SegmentDraft/VisualSource + optional AudioMixSpec
+  -> run_invocation -> preserve -> technical audit
+```
+
+The adapter should retain its original receipt and project-side semantic
+sidecar as run artifacts. If a source or claim changes, start a new run rather
+than editing a prior receipt or deliverable in place.
 
 Run automated audit only after the subject artifact has been preserved in that
 run:

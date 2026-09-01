@@ -26,3 +26,17 @@ ProjectConfig contains intent (`project`, `pipeline.adapter`, `pipeline.preset`,
 Legacy compatibility is intentionally read-only. `validate` understands the existing `SourceRecord` shapes (`source`, `sources`, and `evidence_sources`, including optional `bytes` and `sha256`) without rewriting the source JSON. Mutating commands require a native manifest.
 
 There is deliberately no `publish` or upload command. `build` stops at a byte-bound deliverable pending automated audit and explicit human review; `review` never signs off, `audit` never approves, and `export` only copies a release-ready allowlist into a local directory.
+
+## v2 integration inputs
+
+The CLI remains intentionally limited to the ten lifecycle commands above. A
+project producer may create a generic `CaptureReceipt` and evidence plan/bundle
+v2 before invoking `plan` or `build`; these are project artifacts, not new CLI
+commands. `CaptureReceipt` verifies source bytes, marks, clean-span bounds, and
+evidence references. Evidence v2 allows required roles per sample. Neither
+format runs a recorder or OCR, and neither makes a product claim on its own.
+
+Project composers may also supply a multi-track audio plan and a claims/review
+sidecar. The generic command layer preserves and audits those exact files, while
+the project adapter owns their semantic interpretation. Existing v1 manifests,
+v1 evidence bundles, and the CK3 phase-two capture schema remain readable.

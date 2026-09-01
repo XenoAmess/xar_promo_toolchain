@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xar-promo-toolchain"
-version = "0.1.0"
-description = "A reusable, append-only project and evidence contract for promotional video pipelines"
+version = "0.2.0"
+description = "Reusable capture, evidence, audio, and review contracts for promotional video pipelines"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "GPL-3.0-only"

@@ -224,6 +224,20 @@ A later approval on unchanged bytes may record a genuine human re-review, but
 it must not be used to pretend that rejected bytes were modified. Changed bytes
 always mean a new artifact and a new review.
 
+## Structured claims and project checklists
+
+Version 0.2 integrations may preserve a `claims-review-v1` sidecar alongside
+the review package. A claim binds a stable ID to exact evidence artifact IDs and
+the project validator that produced its result. A checklist response records
+the reviewer's row-level answers and is bound to the exact deliverable bytes.
+
+The generic validator checks only identifier uniqueness, reference closure,
+producer metadata, and byte/SHA-256 consistency. It does not decide whether a
+claim is true, understand a game mechanic, execute OCR, or infer approval from a
+validator result. Project-specific rows such as "no debug overlay" or "the
+advertised mechanic is visible" remain project policy. The normal
+`review -> signoff -> export` gates still apply.
+
 ## Audit is not sign-off
 
 | Record | What it proves | What it cannot prove |

@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:xar-promo:schema:claims-review:v1",
+  "title": "XAR Promo hash-bound claims and structured review v1",
+  "oneOf": [
+    {"$ref": "#/$defs/claims_bundle"},
+    {"$ref": "#/$defs/review_checklist"},
+    {"$ref": "#/$defs/review_response"}
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9A-Fa-f]{64}$"
+    },
+    "portable_path": {
+      "type": "string",
+      "minLength": 1,
+      "allOf": [
+        {"pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\/$)(?!.*[\\u0000-\\u001f\\u007f])[^\\r\\n\\x00]+$(?![\\s\\S])"},
+        {"not": {"pattern": "\\\\"}},
+        {"not": {"pattern": "(^|/)\\.\\.?(/|$)"}}
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "bytes", "sha256"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "path": {"$ref": "#/$defs/portable_path"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha"},
+        "media_type": {"type": "string", "minLength": 1},
+        "source_name": {"type": "string", "minLength": 1}
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "evidence_artifact_ids", "validator_id", "result"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "text": {"type": "string", "minLength": 1},
+        "evidence_artifact_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "validator_id": {"$ref": "#/$defs/id"},
+        "result": {"type": "string", "minLength": 1},
+        "details": {}
+      }
+    },
+    "claims_bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format_version", "kind", "deliverable", "evidence_artifacts", "claims"],
+      "properties": {
+        "format_version": {"const": 1},
+        "kind": {"const": "xar-promo-claims-bundle"},
+        "deliverable": {"$ref": "#/$defs/artifact"},
+        "evidence_artifacts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/artifact"}
+        },
+        "claims": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/claim"}
+        },
+        "metadata": {}
+      }
+    },
+    "checklist_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "instruction", "required"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "instruction": {"type": "string", "minLength": 1},
+        "required": {"type": "boolean"}
+      }
+    },
+    "review_checklist": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format_version", "kind", "checklist_id", "items", "template_only", "is_signoff"],
+      "properties": {
+        "format_version": {"const": 1},
+        "kind": {"const": "xar-promo-review-checklist"},
+        "checklist_id": {"$ref": "#/$defs/id"},
+        "deliverable": {
+          "anyOf": [
+            {"$ref": "#/$defs/artifact"},
+            {"type": "null"}
+          ]
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/checklist_item"}
+        },
+        "metadata": {},
+        "template_only": {"const": true},
+        "is_signoff": {"const": false}
+      }
+    },
+    "review_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["item_id", "result"],
+      "properties": {
+        "item_id": {"$ref": "#/$defs/id"},
+        "result": {"enum": ["pass", "fail", "not_applicable"]},
+        "note": {"type": "string", "minLength": 1}
+      }
+    },
+    "review_response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format_version",
+        "kind",
+        "checklist_id",
+        "deliverable",
+        "reviewer",
+        "reviewed_at",
+        "decision",
+        "results",
+        "is_signoff",
+        "signoff_recorded"
+      ],
+      "properties": {
+        "format_version": {"const": 1},
+        "kind": {"const": "xar-promo-review-response"},
+        "checklist_id": {"$ref": "#/$defs/id"},
+        "deliverable": {"$ref": "#/$defs/artifact"},
+        "reviewer": {"type": "string", "minLength": 1},
+        "reviewed_at": {"type": "string", "minLength": 1},
+        "decision": {"enum": ["approved", "rejected"]},
+        "results": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/review_result"}
+        },
+        "notes": {"type": "string", "minLength": 1},
+        "is_signoff": {"const": false},
+        "signoff_recorded": {"const": false}
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 ## Scope and current boundary
 
-`xar_promo_toolchain` is the reusable metadata, evidence-retention, capture-adapter, TTS, layout, media-process, pipeline, audit, review, and offline-export foundation for promotional-video pipelines. Its ten-command CLI covers the project/run lifecycle plus dependency-injected plan/build, automated audit, pending human review, explicit sign-off, and local release-bundle export. Projects still own their adapter, preset, `PipelineComposer`, executables, and content policy; the package is not a timeline editor, capture runner, or publication service.
+`xar_promo_toolchain` is the reusable metadata, evidence-retention, producer-neutral capture receipt, configurable evidence-role, claims-binding, TTS, layout, media-process, pipeline, audit, review, and offline-export foundation for promotional-video pipelines. Its ten-command CLI covers the project/run lifecycle plus dependency-injected plan/build, automated audit, pending human review, explicit sign-off, and local release-bundle export. Projects still own their adapter, preset, `PipelineComposer`, executables, and content policy; the package is not a recorder, OCR engine, timeline editor, or publication service.
 
 This is a standalone repository. The `tools/` and `mod_zhongguo_style/` paths
 used in the migration notes below are historical paths in the CK3 integration
@@ -18,17 +18,18 @@ This distinction is important: a valid manifest, a preserved MP4, or a command a
 project preset (story, voice, languages, duration, release policy)
                          |
                          v
-domain adapter (for example, verified CK3 capture marks and clean spans)
+domain adapter (for example, verified CK3/Vivhite capture marks and clean spans)
                          |
                          v
-generic package (config/run models, hashes, retention, TTS, sign-off)
+generic package (config/run models, capture/evidence contracts, hashes, retention,
+                 TTS/audio planning, claims/review binding, sign-off)
 ```
 
 The dependency direction is downward. Generic code must not import a CK3 project, and the CK3 adapter must not import a ZhongGuo-specific preset.
 
 | Layer | Current home | Owns | Must not own |
 | --- | --- | --- | --- |
-| Generic package | `src/xar_promo/`, including `tts/` | `ProjectConfig`, `RunManifest`, typed runlog, per-run config snapshots, content-addressed artifacts, provider-neutral TTS, storyboard/source/media/layout primitives, dependency-injected pipeline execution, automated-audit records, pending review packages, explicit sign-off, and offline allowlisted export | CK3 process automation, product claims, brand copy, a fixed voice/language pair, project composition, or publication credentials |
+| Generic package | `src/xar_promo/`, including `capture.py`, `evidence.py`, `claims.py`, and `tts/` | `ProjectConfig`, `RunManifest`, typed runlog, per-run config snapshots, content-addressed artifacts, producer-neutral capture receipts, configurable evidence roles, structural claim/review bindings, provider-neutral TTS, storyboard/source/media/layout primitives, dependency-injected pipeline execution, audio planning, automated-audit records, pending review packages, explicit sign-off, and offline allowlisted export | CK3/STS2 process automation, product claims, brand copy, a fixed voice/language pair, project composition, OCR execution, recording, or publication credentials |
 | CK3 adapter | `src/xar_promo/adapters/ck3/` | Read-only verification and projection of a CK3 capture bundle: report, evidence index, raw capture, ordered marks, independently evidenced clean spans, and an end-of-operation source-integrity check | OCR, capture orchestration, repairing a failed run, choosing a story, or deciding whether a particular mod claim is sufficiently demonstrated |
 | Project preset | `src/xar_promo/presets/`, a standard checked-in `ProjectConfig`, and the project's legacy wrappers during migration | Chapter order, narration, subtitles, visual identity, required CK3 marks/spans, real-character policy, voice, duration limit, humor/tone, and release gates | Changes to generic schemas or CK3 evidence semantics merely to accommodate one campaign |
 
@@ -106,7 +107,16 @@ The separation prevents two common ambiguities:
 1. Changing the checked-in plan cannot invalidate or silently reinterpret evidence captured for an older run; `start-run` snapshots the changed plan for a new run.
 2. Retrying one phase cannot erase which bytes were captured, rendered, audited, or reviewed in an earlier attempt.
 
-At version 0.1, `plan`, `build`, and `audit` call real generic handlers. `plan` is strictly read-only; `build` executes a project-composed invocation and retains both successful and failed attempt material; `audit` preserves evidence/report bytes and appends only a typed automated result. A required `--composer MODULE:ATTRIBUTE` keeps project composition outside the generic schema, while adapter and preset IDs resolve through standard entry-point groups. Existing project wrappers remain valid migration entry points and may delegate incrementally.
+At version 0.2, `plan`, `build`, and `audit` call the same generic handlers while
+capture receipts, configurable evidence roles, structural claims, and optional
+multi-track audio are available to project composers. `plan` is strictly
+read-only; `build` executes a project-composed invocation and retains both
+successful and failed attempt material; `audit` preserves evidence/report bytes
+and appends only a typed automated result. A required `--composer
+MODULE:ATTRIBUTE` keeps project composition outside the generic schema, while
+adapter and preset IDs resolve through standard entry-point groups. Existing
+project wrappers remain valid migration entry points and may delegate
+incrementally.
 
 ## Process-material retention
 
@@ -133,6 +143,71 @@ A project supplies `required_span_ids` and `required_mark_labels`; this keeps ca
 
 The adapter does not launch CK3 or record the desktop. Those operations remain responsibilities of the CK3 acceptance/capture runner, which is a producer upstream of this toolchain.
 
+## Version 0.2 generic contracts (prepared, not yet tagged)
+
+The 0.2 contract extraction is deliberately domain-neutral. A producer writes a
+`CaptureReceipt` containing exact source-file bindings, a media time base and
+duration, ordered marks, named clean spans, and evidence references. The generic
+capture loader validates relative paths, byte counts, SHA-256 values, ordering,
+positive span durations, and the declared overlap policy. It can re-check the
+same files with `verify_unchanged()` after composition. It does not launch a
+recorder, execute OCR, inspect a game API, or classify a span as natural/staged.
+
+Evidence plan/bundle v2 keeps the v1 wire shape compatible while making required
+roles configurable per sample. A caller can require `frame.begin`,
+`tooltip.ocr`, `state.before`, or any other portable role; xAR verifies role
+presence and producer/artifact/hash closure only. The meaning and validator for
+each role remain in the project adapter. The CK3 phase-two schema is retained as
+its own legacy format and must not be extended with another project's fields.
+
+The implementation keeps the legacy `build_sampling_plan` and
+`write_evidence_bundle` entry points intact. Integrations that need configurable
+roles use `build_sampling_plan_v2`, `validate_sampling_plan_v2`,
+`write_sampling_plan_v2`, `write_evidence_bundle_v2`, and the corresponding
+v2-aware loaders. This is a data-contract version, not a new CLI command.
+
+The claims/review sidecar binds a stable claim ID to evidence artifact IDs,
+validator metadata, and a result, and can carry a structured checklist response.
+This is a referential-integrity contract, not a truth engine: xAR never decides
+whether a product statement is true and never turns an automated result into a
+human sign-off.
+
+The audio planner accepts typed stems and deterministic operations (trim, delay,
+gain, fade, and ducking) and records the resulting media command plan. A project
+still owns voice, language, music selection, rights, loudness policy, and artistic
+mix decisions. The legacy single-audio renderer and `PipelineComposer` ABI remain
+valid during migration.
+
+The new schema resources are packaged in both wheel and sdist:
+
+```text
+xar_promo/schemas/capture-receipt-v1.schema.json
+xar_promo/schemas/evidence-plan-v2.schema.json
+xar_promo/schemas/evidence-bundle-v2.schema.json
+xar_promo/schemas/claims-review-v1.schema.json
+```
+
+`install-contract-v1.json` is updated with this resource list and the 0.2.0
+artifact names. The schema filename remains v1 where the capture wire contract
+is new but stable; the historical CK3 phase-two filename is unchanged for
+compatibility.
+
+## Example boundary: a game-specific integration
+
+For a game project such as Vivhite, the integration repository owns the
+producer, preset, and semantic validator. It may add a sidecar with shot IDs,
+game version, state/action receipts, overlay policy, natural/staged status,
+card or mechanic claims, bilingual script, and release metadata. Its adapter
+projects only the verified files, marks, spans, and evidence roles into the
+generic contracts above.
+
+The generic package must not import the game API, know card or HP rules, start
+Vulkan/OBS, hide game overlays, or decide that a mechanic was demonstrated.
+Conversely, the integration must reuse xAR's retention, audio plan, audit,
+review, sign-off, and export primitives instead of maintaining a parallel
+implementation. This keeps the same capture/evidence boundary useful for CK3,
+gameplay, software-demo, and other future projects.
+
 ## Legacy-wrapper migration
 
 The current, working production path remains authoritative during migration:
@@ -154,9 +229,9 @@ This is not a big-bang rewrite. Existing wrappers remain callable, and existing 
 
 ## Non-goals
 
-Version 0.1 does not attempt to:
+Version 0.2 still does not attempt to:
 
-- replace the CK3 automation or capture runner;
+- replace the CK3/STS2 automation or capture runner;
 - infer game state or content claims with OCR;
 - provide a timeline editor, nonlinear editor, or general media-asset manager;
 - guess adapter/preset factory signatures, hide project composition inside the generic schema, or provide a one-size-fits-all editing policy;
