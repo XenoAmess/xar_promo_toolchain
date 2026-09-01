@@ -37,6 +37,9 @@ _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _SHA256 = re.compile(r"^[0-9A-Fa-f]{64}$")
 _REVIEW_RESULTS = frozenset({"pass", "fail", "not_applicable"})
 _DECISIONS = frozenset({"approved", "rejected"})
+_EXTERNAL_PRODUCER_FIELDS = frozenset(
+    {"adapter_id", "tool", "tool_version", "operation", "execution"}
+)
 
 
 class ClaimsError(PromoToolchainError):
@@ -116,6 +119,27 @@ def _json_value(value: Any, context: str) -> Any:
         raise ClaimsError(f"{context} must contain only JSON values") from exc
 
 
+def _external_producer(value: Any, context: str) -> dict[str, str]:
+    """Validate the producer sibling accepted by an evidence wrapper.
+
+    ``ArtifactBinding`` intentionally does not retain producer metadata, but
+    accepting and then silently discarding malformed metadata would make a
+    caller believe an external evidence binding had been checked.  Keep this
+    small validation local to avoid making the claims contract depend on the
+    evidence module's exception hierarchy.
+    """
+
+    row = _object(value, context)
+    _only_keys(row, set(_EXTERNAL_PRODUCER_FIELDS), context)
+    result = {
+        key: _string(row.get(key), f"{context}.{key}", single_line=True)
+        for key in sorted(_EXTERNAL_PRODUCER_FIELDS)
+    }
+    if result["execution"] != "external":
+        raise ClaimsError(f"{context}.execution must be 'external'")
+    return result
+
+
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     try:
@@ -125,6 +149,22 @@ def _sha256_file(path: Path) -> str:
     except OSError as exc:
         raise ClaimsError(f"could not hash artifact {path}: {exc}") from exc
     return digest.hexdigest().upper()
+
+
+def _canonical_json_sha256(value: Any) -> str:
+    """Hash a JSON value independently of object key order/whitespace."""
+
+    try:
+        payload = json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    except (TypeError, ValueError, UnicodeEncodeError) as exc:
+        raise ClaimsError("value cannot be canonically encoded as JSON") from exc
+    return hashlib.sha256(payload).hexdigest().upper()
 
 
 def _resolve_under_root(path: str, project_root: Path, context: str) -> Path:
@@ -178,9 +218,15 @@ class ArtifactBinding:
             # cannot bypass identifier/path/digest validation.
             return cls.from_mapping(value.to_dict(), context)
         row = _object(value, context)
-        # Accept a nested SourceRecord-style wrapper when callers pass an
+        # Accept a nested evidence/source-record wrapper when callers pass an
         # evidence bundle entry directly, while emitting one canonical shape.
-        if set(row) == {"artifact"}:
+        # ``bind_external_artifact`` adds a producer sibling; it belongs to
+        # the evidence contract rather than the immutable artifact identity,
+        # but accepting the wrapper here keeps the claims boundary composable.
+        if "artifact" in row:
+            _only_keys(row, {"artifact", "producer"}, context)
+            if "producer" in row:
+                _external_producer(row["producer"], f"{context}.producer")
             row = _object(row["artifact"], f"{context}.artifact")
         allowed = {
             "id",
@@ -704,6 +750,25 @@ class ReviewChecklist:
             result["metadata"] = self.metadata
         return result
 
+    @property
+    def checklist_sha256(self) -> str:
+        """Return the canonical digest that a response must carry.
+
+        The digest covers the normalized checklist document, including its
+        stable format/kind markers, row order, deliverable binding, and
+        metadata.  It intentionally does not include a response field, so a
+        response can bind to the checklist without a recursive structure.
+        """
+
+        canonical = ReviewChecklist.from_mapping(self.to_dict())
+        return _canonical_json_sha256(canonical.to_dict())
+
+    # ``sha256`` is a short compatibility spelling for callers that treat a
+    # checklist like the other hash-bound records in this package.
+    @property
+    def sha256(self) -> str:
+        return self.checklist_sha256
+
     def verify(self, project_root: Path) -> "ReviewChecklist":
         if self.deliverable is not None:
             self.deliverable.verify(project_root)
@@ -764,6 +829,7 @@ class ReviewResponse:
     decision: str
     results: tuple[ReviewResult, ...]
     notes: str | None = None
+    checklist_sha256: str | None = None
 
     @classmethod
     def from_mapping(cls, value: Any) -> "ReviewResponse":
@@ -780,6 +846,7 @@ class ReviewResponse:
                 "decision",
                 "results",
                 "notes",
+                "checklist_sha256",
                 "is_signoff",
                 "signoff_recorded",
             },
@@ -809,6 +876,11 @@ class ReviewResponse:
         if len(ids) != len(set(ids)):
             raise ClaimsError("review response.results contains duplicate item ids")
         notes = None if row.get("notes") is None else _string(row["notes"], "review response.notes", single_line=True)
+        checklist_sha256 = (
+            None
+            if row.get("checklist_sha256") is None
+            else _sha(row["checklist_sha256"], "review response.checklist_sha256")
+        )
         return cls(
             _identifier(row.get("checklist_id"), "review response.checklist_id"),
             ArtifactBinding.from_mapping(row.get("deliverable"), "review response.deliverable"),
@@ -817,6 +889,7 @@ class ReviewResponse:
             decision,
             results,
             notes,
+            checklist_sha256,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -834,6 +907,8 @@ class ReviewResponse:
         }
         if self.notes is not None:
             result["notes"] = self.notes
+        if self.checklist_sha256 is not None:
+            result["checklist_sha256"] = self.checklist_sha256
         return result
 
 
@@ -884,6 +959,16 @@ def validate_review_response(
         raise ClaimsError("review response is missing checklist result(s): " + ", ".join(missing))
     if extra:
         raise ClaimsError("review response contains unknown checklist result(s): " + ", ".join(extra))
+    expected_checklist_sha256 = checklist_obj.checklist_sha256
+    if response_obj.checklist_sha256 is None:
+        raise ClaimsError(
+            "review response is legacy_unbound: checklist_sha256 is required to bind "
+            "the checklist hash"
+        )
+    if response_obj.checklist_sha256 != expected_checklist_sha256:
+        raise ClaimsError(
+            "review response checklist_sha256 does not match the checklist hash"
+        )
     result_map = {item.item_id: item.result for item in response_obj.results}
     if response_obj.decision == "approved":
         failed_required = [
@@ -936,9 +1021,19 @@ def write_review_response(
 ) -> dict[str, Any]:
     """Write one response after validation; never records run-manifest sign-off."""
 
+    checklist_obj = (
+        ReviewChecklist.from_mapping(checklist.to_dict())
+        if isinstance(checklist, ReviewChecklist)
+        else ReviewChecklist.from_mapping(checklist)
+    )
+    response_obj = (
+        ReviewResponse.from_mapping(response.to_dict())
+        if isinstance(response, ReviewResponse)
+        else ReviewResponse.from_mapping(response)
+    )
     payload = validate_review_response(
-        response,
-        checklist,
+        response_obj,
+        checklist_obj,
         project_root=project_root,
         expected_deliverable=expected_deliverable,
     )

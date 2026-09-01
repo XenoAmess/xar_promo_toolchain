@@ -17,7 +17,7 @@ import math
 import mimetypes
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePath
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, Protocol, Sequence, runtime_checkable
@@ -481,6 +481,27 @@ def _output_paths(
     return segments, deliverable, concat_manifest, concat_partial
 
 
+def _resolve_audio_mix_paths(spec: AudioMixSpec) -> AudioMixSpec:
+    """Pin audio-stem paths before a render changes its working directory.
+
+    ``AudioStem.path`` is authored relative to the caller's process directory,
+    while FFmpeg is deliberately executed with ``attempt_root`` as its cwd.
+    Passing the original relative spelling therefore makes validation and
+    execution address different files.  Resolve the paths once at the
+    pipeline boundary and pass a fresh immutable spec to both artifact
+    binding and the render planner.  The direct audio/render planning APIs
+    retain their existing relative-path ABI.
+    """
+
+    resolved_stems = tuple(
+        replace(stem, path=stem.path.expanduser().resolve())
+        for stem in spec.stems
+    )
+    if resolved_stems == spec.stems:
+        return spec
+    return replace(spec, stems=resolved_stems)
+
+
 def _validate_draft(
     draft: PipelineDraft,
     workdir: Path,
@@ -799,6 +820,7 @@ def run_pipeline(
     attempt_root = Path(workdir).expanduser().resolve()
     phases: list[PipelinePhaseRecord] = []
     artifacts: list[PipelineArtifactRecord] = []
+    resolved_audio_mixes: dict[str, AudioMixSpec] = {}
     try:
         if not isinstance(validate_only, bool) or not isinstance(offline_tts, bool):
             raise PipelineValidationError(
@@ -820,6 +842,17 @@ def run_pipeline(
                 "retry_backoff_seconds must be finite and non-negative"
             )
         _validate_draft(draft, attempt_root, dependencies)
+        # Resolve relative audio stems while the caller's cwd still defines
+        # their meaning.  The render commands below run from ``attempt_root``;
+        # keeping the normalized specs in a local map prevents a relative path
+        # from being validated against one directory and consumed from
+        # another.  Keep this inside the draft error boundary so unusual
+        # symlink/resolve failures become a typed RED result as well.
+        resolved_audio_mixes = {
+            segment.segment_id: _resolve_audio_mix_paths(segment.audio_mix)
+            for segment in draft.segments
+            if segment.audio_mix is not None
+        }
     except Exception as error:
         return _failed_result(
             error,
@@ -933,10 +966,11 @@ def run_pipeline(
     audio_stem_records: list[PipelineArtifactRecord] = []
     try:
         for segment in draft.segments:
-            if segment.audio_mix is None:
+            audio_mix = resolved_audio_mixes.get(segment.segment_id)
+            if audio_mix is None:
                 continue
-            for stem in segment.audio_mix.stems:
-                stem_path = stem.path.resolve()
+            for stem in audio_mix.stems:
+                stem_path = stem.path
                 if not stem_path.is_file():
                     raise PipelineValidationError(
                         f"audio stem {stem.stem_id!r} is missing: {stem_path}"
@@ -1018,8 +1052,9 @@ def run_pipeline(
             # Preserve the old custom-planner call shape when a segment does
             # not opt into mixing.  New planners receive the typed spec only
             # for opted-in segments, so legacy composers remain ABI-compatible.
-            if segment.audio_mix is not None:
-                render_kwargs["audio_mix"] = segment.audio_mix
+            audio_mix = resolved_audio_mixes.get(segment.segment_id)
+            if audio_mix is not None:
+                render_kwargs["audio_mix"] = audio_mix
             plans[segment.segment_id] = dependencies.render_planner(**render_kwargs)
     except Exception as error:
         return _failed_result(

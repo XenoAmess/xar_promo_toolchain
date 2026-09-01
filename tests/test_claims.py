@@ -5,6 +5,7 @@ import json
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 
@@ -172,6 +173,29 @@ class ClaimsTests(unittest.TestCase):
                 claims=self.claims,
             )
 
+    def test_artifact_binding_accepts_external_evidence_wrapper(self) -> None:
+        wrapped = {
+            "artifact": self.frame.to_dict(),
+            "producer": {
+                "adapter_id": "fixture",
+                "tool": "fixture-tool",
+                "tool_version": "1",
+                "operation": "capture",
+                "execution": "external",
+            },
+        }
+        binding = ArtifactBinding.from_mapping(wrapped)
+        self.assertEqual(self.frame, binding)
+        wrapped["producer"] = {
+            "adapter_id": "fixture",
+            "tool": "fixture-tool",
+            "tool_version": "1",
+            "operation": "capture",
+            "execution": "local",
+        }
+        with self.assertRaisesRegex(ClaimsError, "execution"):
+            ArtifactBinding.from_mapping(wrapped)
+
 
 class StructuredReviewTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -210,6 +234,7 @@ class StructuredReviewTests(unittest.TestCase):
                 ReviewResult("captions-readable", optional),
             ),
             notes="Watched continuously at normal speed.",
+            checklist_sha256=self.checklist.checklist_sha256,
         )
 
     def test_checklist_can_be_unbound_template(self) -> None:
@@ -237,6 +262,8 @@ class StructuredReviewTests(unittest.TestCase):
             response.reviewed_at,
             "approved",
             (ReviewResult("watch-complete", "fail"), ReviewResult("captions-readable", "pass")),
+            None,
+            self.checklist.checklist_sha256,
         )
         with self.assertRaisesRegex(ClaimsError, "non-passing required"):
             validate_review_response(failed, self.checklist, project_root=self.root)
@@ -278,6 +305,24 @@ class StructuredReviewTests(unittest.TestCase):
         with self.assertRaisesRegex(ClaimsError, "does not match the checklist"):
             validate_review_response(mismatched, self.checklist, project_root=self.root)
 
+    def test_response_rejects_changed_checklist_with_same_id(self) -> None:
+        response = self._response()
+        changed = ReviewChecklist(
+            self.checklist.checklist_id,
+            (
+                ChecklistItem("watch-complete", "Watch a different deliverable.", True),
+                self.checklist.items[1],
+            ),
+            deliverable=self.binding,
+        )
+        with self.assertRaisesRegex(ClaimsError, "checklist_sha256"):
+            validate_review_response(response, changed, project_root=self.root)
+
+    def test_response_with_complete_rows_but_no_checklist_hash_is_unbound(self) -> None:
+        response = replace(self._response(), checklist_sha256=None)
+        with self.assertRaisesRegex(ClaimsError, "legacy_unbound"):
+            validate_review_response(response, self.checklist, project_root=self.root)
+
     def test_response_write_load_is_append_only_and_not_signoff(self) -> None:
         checklist_path = self.root / "checklist.json"
         response_path = self.root / "response.json"
@@ -295,6 +340,7 @@ class StructuredReviewTests(unittest.TestCase):
             project_root=self.root,
         )
         self.assertEqual(written, loaded)
+        self.assertEqual(self.checklist.checklist_sha256, written["checklist_sha256"])
         self.assertFalse(loaded["is_signoff"])
         self.assertFalse(loaded["signoff_recorded"])
         with self.assertRaisesRegex(ClaimsError, "overwrite existing review response"):
@@ -302,6 +348,34 @@ class StructuredReviewTests(unittest.TestCase):
                 response_path,
                 response,
                 self.checklist,
+                project_root=self.root,
+            )
+
+    def test_response_writer_rejects_unbound_legacy_records(self) -> None:
+        response = replace(self._response(), checklist_sha256=None)
+        with self.assertRaisesRegex(ClaimsError, "legacy_unbound"):
+            write_review_response(
+                self.root / "unbound-response.json",
+                response,
+                self.checklist,
+                project_root=self.root,
+            )
+
+    def test_response_writer_does_not_rebind_old_response_to_changed_checklist(self) -> None:
+        old_response = replace(self._response(), checklist_sha256=None)
+        changed = ReviewChecklist(
+            self.checklist.checklist_id,
+            (
+                ChecklistItem("watch-complete", "Watch a different deliverable.", True),
+                self.checklist.items[1],
+            ),
+            deliverable=self.binding,
+        )
+        with self.assertRaisesRegex(ClaimsError, "legacy_unbound"):
+            write_review_response(
+                self.root / "rebind-attempt.json",
+                old_response,
+                changed,
                 project_root=self.root,
             )
 

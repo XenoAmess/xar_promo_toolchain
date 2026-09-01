@@ -38,6 +38,31 @@ class AudioMixValidationError(AudioMixError):
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _MAX_DB = 120.0
+# Keep the channel contract to layouts that have a stable spelling in the
+# FFmpeg versions supported by the toolchain.  A bare ``aformat`` does not
+# change the number of channels (and ``adelay`` only delays channels for which
+# a value is supplied), so pretending to support arbitrary counts can leak an
+# undelayed source channel or silently produce a mono output.  The explicit
+# layouts below cover the standard mono through 7.1 production targets.
+_CHANNEL_LAYOUTS = {
+    1: "mono",
+    2: "stereo",
+    3: "3.0",
+    4: "4.0",
+    5: "5.0",
+    6: "5.1",
+    7: "6.1",
+    8: "7.1",
+}
+_MAX_CHANNELS = max(_CHANNEL_LAYOUTS)
+# The standalone helper defaults to AAC.  These suffixes are common containers
+# that either cannot carry AAC at all or conventionally imply a different
+# codec; fail before spawning FFmpeg instead of producing a misleading file.
+_AAC_CODECS = frozenset({"aac", "libfdk_aac", "libaacplus", "libvo_aacenc"})
+_AAC_INCOMPATIBLE_SUFFIXES = frozenset(
+    {".wav", ".wave", ".bwf", ".rf64", ".mp3", ".ogg", ".oga", ".opus", ".flac"}
+)
+_FASTSTART_SUFFIXES = frozenset({".mp4", ".m4v", ".m4a", ".mov", ".3gp", ".3g2"})
 _EPSILON = 1e-6
 
 
@@ -59,7 +84,10 @@ def _finite_number(
 ) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise AudioMixValidationError(f"{label} must be a finite number")
-    result = float(value)
+    try:
+        result = float(value)
+    except (OverflowError, ValueError) as exc:
+        raise AudioMixValidationError(f"{label} must be a finite number") from exc
     if not math.isfinite(result):
         raise AudioMixValidationError(f"{label} must be a finite number")
     lower = 0.0 if minimum is None else minimum
@@ -104,6 +132,32 @@ def _format_seconds(value: float) -> str:
 
 def _format_db(value: float) -> str:
     return f"{value:.6f}"
+
+
+def _audio_output_options(
+    destination: str,
+    audio_codec: str,
+) -> tuple[str, ...]:
+    """Return container-specific options for the standalone audio command.
+
+    ``AudioMixPlan`` deliberately does not probe a destination container.  We
+    still reject the known-dangerous default pairing (AAC in WAV/MP3/etc.)
+    and only request ``+faststart`` for ISO-BMFF containers that implement it.
+    Other codec/container combinations remain available to callers that pass
+    an explicit encoder, but never receive an option that is known to target a
+    different container family.
+    """
+
+    suffix = Path(destination).suffix.casefold()
+    codec = audio_codec.casefold()
+    if codec in _AAC_CODECS and suffix in _AAC_INCOMPATIBLE_SUFFIXES:
+        raise AudioMixValidationError(
+            f"audio codec {audio_codec!r} is incompatible with output suffix {suffix!r}; "
+            "use an AAC container such as .m4a/.mp4 or choose a matching codec"
+        )
+    if suffix in _FASTSTART_SUFFIXES:
+        return ("-movflags", "+faststart")
+    return ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -275,8 +329,10 @@ class AudioMixSpec:
             duration = _duration(duration, "audio mix duration_seconds")
         sample_rate = _integer(self.sample_rate, "audio mix sample_rate")
         channels = _integer(self.channels, "audio mix channels")
-        if channels > 32:
-            raise AudioMixValidationError("audio mix channels must be <= 32")
+        if channels > _MAX_CHANNELS:
+            raise AudioMixValidationError(
+                f"audio mix channels must be an integer in the supported range 1..{_MAX_CHANNELS}"
+            )
         if not isinstance(self.metadata, Mapping):
             raise AudioMixValidationError("audio mix metadata must be a mapping")
         metadata: dict[str, object] = {}
@@ -352,8 +408,10 @@ class AudioMixPlan:
             )
         sample_rate = _integer(self.sample_rate, "audio mix plan sample_rate")
         channels = _integer(self.channels, "audio mix plan channels")
-        if channels > 32:
-            raise AudioMixValidationError("audio mix plan channels must be <= 32")
+        if channels > _MAX_CHANNELS:
+            raise AudioMixValidationError(
+                f"audio mix plan channels must be an integer in the supported range 1..{_MAX_CHANNELS}"
+            )
         object.__setattr__(self, "duration_seconds", duration)
         object.__setattr__(self, "input_paths", paths)
         object.__setattr__(self, "sample_rate", sample_rate)
@@ -401,6 +459,16 @@ class AudioMixPlan:
                 raise AudioMixValidationError(f"{label} must be non-empty NUL-free text")
         if not isinstance(overwrite, bool):
             raise AudioMixValidationError("overwrite must be boolean")
+        output_options = _audio_output_options(destination, audio_codec)
+        # ``filtergraph`` labels are relative to the complete FFmpeg input
+        # list.  This helper emits a standalone command with only the stem
+        # inputs, so a non-zero offset would make every ``[N:a]`` reference
+        # point at a missing input.  Embedded video renders use
+        # ``plan_render`` instead, where the offset is intentional.
+        if self.input_start_index != 0:
+            raise AudioMixValidationError(
+                "standalone audio mix ffmpeg_argv requires input_start_index=0"
+            )
         argv: list[str] = [
             executable,
             "-nostdin",
@@ -427,11 +495,10 @@ class AudioMixPlan:
                 str(self.sample_rate),
                 "-ac",
                 str(self.channels),
-                "-movflags",
-                "+faststart",
-                destination,
             )
         )
+        argv.extend(output_options)
+        argv.append(destination)
         return tuple(argv)
 
     def to_mapping(self) -> dict[str, object]:
@@ -485,14 +552,13 @@ def validate_audio_mix(spec: AudioMixSpec, *, duration_seconds: float) -> AudioM
 
 
 def _channel_format(channels: int) -> str:
-    if channels == 1:
-        return "aformat=sample_fmts=fltp:channel_layouts=mono"
-    if channels == 2:
-        return "aformat=sample_fmts=fltp:channel_layouts=stereo"
-    # FFmpeg's generic aformat does not require us to invent a channel-layout
-    # name for arbitrary project output.  The final ``-ac`` option handles the
-    # requested count while sample format remains deterministic.
-    return "aformat=sample_fmts=fltp"
+    try:
+        layout = _CHANNEL_LAYOUTS[channels]
+    except (KeyError, TypeError) as exc:
+        raise AudioMixValidationError(
+            "audio mix channels must be an integer in the supported range 1..8"
+        ) from exc
+    return f"aformat=sample_fmts=fltp:channel_layouts={layout}"
 
 
 def _build_filtergraph(
@@ -507,6 +573,10 @@ def _build_filtergraph(
     target = _validate_target_duration(spec, duration_seconds)
     rate = _integer(sample_rate, "audio mix sample_rate")
     channel_count = _integer(channels, "audio mix channels")
+    # Validate the layout before constructing any per-stem filters.  This is
+    # intentionally stricter than merely checking positivity: the graph must
+    # establish an exact, portable channel count before ``adelay`` runs.
+    _channel_format(channel_count)
     if isinstance(input_start_index, bool) or not isinstance(input_start_index, int):
         raise AudioMixValidationError("audio mix input_start_index must be an integer")
     if input_start_index < 0:
@@ -531,11 +601,35 @@ def _build_filtergraph(
             "asetpts=PTS-STARTPTS",
         ]
         if stem.delay_seconds > 0.0:
-            # ``adelay`` accepts one millisecond value per channel.  Emit the
-            # exact same value for every requested output channel instead of
-            # relying on version-specific ``all`` options.
-            delay_value = _format_seconds(stem.delay_seconds * 1000.0)
-            filters.append("adelay=" + "|".join([delay_value] * channel_count))
+            # Normalize the source to the requested output channel layout
+            # *before* delaying it.  ``adelay`` applies one value per source
+            # channel; delaying first and downmixing later leaves any source
+            # channels beyond the requested count at t=0.  Doing the layout
+            # negotiation first keeps the graph correct on older FFmpeg
+            # builds as well (the ``adelay:all`` option is not available in
+            # several commonly deployed 4.x binaries).
+            filters.extend(
+                (
+                    f"aresample={rate}:async=0",
+                    _channel_format(channel_count),
+                )
+            )
+            # ``adelay`` accepts one millisecond value per source channel.
+            # Since the preceding explicit ``aformat`` establishes the target
+            # layout, the requested count is also the exact number of values
+            # needed.  Supplying a larger arbitrary list is not safe: older
+            # FFmpeg builds may retain the source's original layout and emit a
+            # different channel count.
+            delay_channel_count = channel_count
+            delay_milliseconds = stem.delay_seconds * 1000.0
+            if not math.isfinite(delay_milliseconds):
+                raise AudioMixValidationError(
+                    f"audio stem {stem.stem_id!r} delay_seconds is too large for FFmpeg"
+                )
+            delay_value = _format_seconds(delay_milliseconds)
+            filters.append(
+                "adelay=" + "|".join([delay_value] * delay_channel_count)
+            )
         if stem.gain_db != 0.0:
             filters.append(f"volume={_format_db(stem.gain_db)}dB")
         if stem.fade_in_seconds > 0.0:

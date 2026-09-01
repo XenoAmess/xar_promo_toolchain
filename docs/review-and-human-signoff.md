@@ -229,7 +229,14 @@ always mean a new artifact and a new review.
 Version 0.2 integrations may preserve a `claims-review-v1` sidecar alongside
 the review package. A claim binds a stable ID to exact evidence artifact IDs and
 the project validator that produced its result. A checklist response records
-the reviewer's row-level answers and is bound to the exact deliverable bytes.
+the reviewer's row-level answers, carries the canonical `checklist_sha256` of
+the normalized checklist (including row order, required flags, deliverable
+binding, and metadata), and is bound to the exact deliverable bytes. A
+response that omits or mismatches that digest is unbound and must not be used
+as a review approval. A pre-hash v1 response remains parseable for archival
+inspection but is classified as `legacy_unbound` by validation; responses
+authored for a new checklist must provide that checklist's explicit digest to
+the writer, which refuses to auto-bind an untrusted legacy record.
 
 The generic validator checks only identifier uniqueness, reference closure,
 producer metadata, and byte/SHA-256 consistency. It does not decide whether a

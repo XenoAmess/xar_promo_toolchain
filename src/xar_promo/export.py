@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import tempfile
 from dataclasses import dataclass
@@ -27,6 +28,7 @@ ARTIFACT_CATEGORIES = frozenset(
     {"deliverable", "subtitle", "thumbnail", "sidecar", "audit"}
 )
 PROJECT_CONFIG_CATEGORY = "project-config"
+_SHA256 = re.compile(r"^[0-9A-Fa-f]{64}$")
 
 
 class ExportError(ArtifactError):
@@ -100,6 +102,84 @@ def _json_bytes(value: Mapping[str, Any]) -> bytes:
     return (
         json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     ).encode("utf-8")
+
+
+def _validate_digest(value: Any, context: str) -> str:
+    if not isinstance(value, str) or _SHA256.fullmatch(value) is None:
+        raise ExportError(f"{context} must be a SHA-256 digest")
+    return value.upper()
+
+
+def _validate_source_run(value: Any) -> dict[str, Any]:
+    """Validate the provenance shape retained in a self-contained bundle.
+
+    The original run is intentionally not copied into a release directory, so
+    the verifier cannot rehash it here.  It can—and must—still reject forged or
+    incomplete provenance fields before accepting the bundle.
+    """
+
+    if not isinstance(value, dict) or set(value) != {
+        "run_id",
+        "bytes",
+        "sha256",
+        "project_config_sha256",
+    }:
+        raise ExportError("release bundle source_run declaration is invalid")
+    run_id = _string(value["run_id"], "source_run.run_id")
+    size = value["bytes"]
+    if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+        raise ExportError("source_run.bytes must be a non-negative integer")
+    digest = _validate_digest(value["sha256"], "source_run.sha256")
+    config_digest = _validate_digest(
+        value["project_config_sha256"], "source_run.project_config_sha256"
+    )
+    return {
+        "run_id": run_id,
+        "bytes": size,
+        "sha256": digest,
+        "project_config_sha256": config_digest,
+    }
+
+
+def _validate_output_source(
+    value: Any,
+    *,
+    index: int,
+    category: str,
+    size: int,
+    digest: str,
+) -> dict[str, Any]:
+    """Validate a file row's source identity and its top-level binding."""
+
+    context = f"files[{index}].source"
+    if not isinstance(value, dict):
+        raise ExportError(f"{context} must be an object")
+    kind = value.get("kind")
+    if kind == "project-config-snapshot":
+        if set(value) != {"kind", "bytes", "sha256"}:
+            raise ExportError(f"{context} has invalid project-config fields")
+        if category != PROJECT_CONFIG_CATEGORY:
+            raise ExportError(f"{context} project-config kind is only valid for project-config files")
+        source_size = value["bytes"]
+        if isinstance(source_size, bool) or not isinstance(source_size, int) or source_size < 0:
+            raise ExportError(f"{context}.bytes must be a non-negative integer")
+        source_digest = _validate_digest(value["sha256"], f"{context}.sha256")
+    elif kind == "run-artifact":
+        if set(value) != {"kind", "artifact_id", "role", "bytes", "sha256"}:
+            raise ExportError(f"{context} has invalid run-artifact fields")
+        if category == PROJECT_CONFIG_CATEGORY:
+            raise ExportError(f"{context} run-artifact kind is not valid for project-config files")
+        _string(value["artifact_id"], f"{context}.artifact_id")
+        _string(value["role"], f"{context}.role")
+        source_size = value["bytes"]
+        if isinstance(source_size, bool) or not isinstance(source_size, int) or source_size < 0:
+            raise ExportError(f"{context}.bytes must be a non-negative integer")
+        source_digest = _validate_digest(value["sha256"], f"{context}.sha256")
+    else:
+        raise ExportError(f"{context}.kind is unsupported")
+    if source_size != size or source_digest != digest.upper():
+        raise ExportError(f"{context} binding does not match files[{index}]")
+    return dict(value)
 
 
 def _normalize_policy(policy: ReleaseBundlePolicy) -> tuple[ReleaseBundleItem, ...]:
@@ -324,6 +404,7 @@ def verify_release_bundle(directory: Path) -> dict[str, Any]:
         raise ExportError("release bundle manifest fields do not match format v1")
     if raw["format_version"] != FORMAT_VERSION or raw["kind"] != BUNDLE_KIND:
         raise ExportError("release bundle manifest must declare format v1")
+    _validate_source_run(raw.get("source_run"))
     operations = raw.get("operations")
     if operations != {
         "network_used": False,
@@ -358,10 +439,18 @@ def verify_release_bundle(directory: Path) -> dict[str, Any]:
             raise ExportError(f"files[{index}].bytes must be a non-negative integer")
         if not isinstance(digest, str) or len(digest) != 64:
             raise ExportError(f"files[{index}].sha256 is invalid")
+        digest = _validate_digest(digest, f"files[{index}].sha256")
+        _validate_output_source(
+            value["source"],
+            index=index,
+            category=category,
+            size=size,
+            digest=digest,
+        )
         output = root / Path(relative)
         if not output.is_file():
             raise ExportError(f"release bundle file is missing: {relative}")
-        if output.stat().st_size != size or _sha256_file(output) != digest.upper():
+        if output.stat().st_size != size or _sha256_file(output) != digest:
             raise ExportError(f"release bundle file has hash drift: {relative}")
         paths.append(relative)
     if deliverable_count != 1:

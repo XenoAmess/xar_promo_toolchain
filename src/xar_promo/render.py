@@ -240,7 +240,7 @@ def plan_render(
     *,
     ffmpeg: str | os.PathLike[str],
     video_input: Path,
-    audio_input: Path,
+    audio_input: Path | None = None,
     partial_output: Path,
     final_output: Path,
     audit_directory: Path,
@@ -263,6 +263,10 @@ def plan_render(
     effective_final = _effective_path(Path(final_output), cwd)
     start = seconds(start_seconds)
     if audio_mix is None:
+        if audio_input is None:
+            raise RenderPlanError(
+                "audio_input is required when audio_mix is not provided"
+            )
         graph = build_filtergraph(options, ass_path=ass_path)
     else:
         graph = build_multitrack_filtergraph(options, audio_mix, ass_path=ass_path)
@@ -334,6 +338,7 @@ def plan_render_multitrack(
     ffmpeg: str | os.PathLike[str],
     video_input: Path,
     audio_mix: AudioMixSpec,
+    audio_input: Path | None = None,
     partial_output: Path,
     final_output: Path,
     audit_directory: Path,
@@ -352,9 +357,10 @@ def plan_render_multitrack(
     return plan_render(
         ffmpeg=ffmpeg,
         video_input=video_input,
-        # Legacy ``audio_input`` is ignored by the multi-track branch, but a
-        # stable placeholder keeps the implementation in one code path.
-        audio_input=Path("unused-audio-input"),
+        # Legacy ``audio_input`` is ignored by the multi-track branch.  It is
+        # accepted here because ``PipelineDependencies`` deliberately passes
+        # one uniform keyword set to custom planners for ABI compatibility.
+        audio_input=audio_input,
         partial_output=partial_output,
         final_output=final_output,
         audit_directory=audit_directory,

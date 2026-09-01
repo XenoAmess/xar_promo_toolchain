@@ -245,6 +245,35 @@ class ReleaseBundleExportTests(unittest.TestCase):
         with self.assertRaisesRegex(ExportError, "differs from its allowlist"):
             verify_release_bundle(extra)
 
+    def test_bundle_verifier_rejects_forged_source_run_provenance(self) -> None:
+        bundle = Path(self.temporary.name) / "forged-source-run"
+        export_release_bundle(self.run_path, bundle, policy=self._policy())
+        manifest_path = bundle / MANIFEST_NAME
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["source_run"]["sha256"] = "not-a-sha256"
+        manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ExportError, "source_run"):
+            verify_release_bundle(bundle)
+
+    def test_bundle_verifier_rejects_source_identity_or_binding_drift(self) -> None:
+        bundle = Path(self.temporary.name) / "forged-source-row"
+        export_release_bundle(self.run_path, bundle, policy=self._policy())
+        manifest_path = bundle / MANIFEST_NAME
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        deliverable = next(
+            row for row in manifest["files"] if row["category"] == "deliverable"
+        )
+        deliverable["source"]["bytes"] = 999
+        manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ExportError, r"files\[.*\]\.source"):
+            verify_release_bundle(bundle)
+
 
 if __name__ == "__main__":
     unittest.main()

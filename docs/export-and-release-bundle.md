@@ -226,8 +226,12 @@ The bundle contains only allowlisted copies plus
 - for each copied file: category, bundle-relative path, bytes, SHA-256, and the
   originating run artifact identity/role or project-config snapshot identity.
 
-`verify_release_bundle` recomputes every copied file binding and rejects both
-missing files and files not present in the manifest allowlist. Export does not
+`verify_release_bundle` validates the source-run and per-file source identity
+shapes, checks that each nested source byte/SHA binding agrees with its file
+row, recomputes every copied file binding, and rejects both missing files and
+files not present in the manifest allowlist. The source-run digest is a
+provenance claim retained from the native run; independently rechecking that
+digest requires access to the original run manifest. Export does not
 move, edit, or delete the source artifact, run manifest, config snapshot,
 failed attempts, raw captures, or other process material. Omitted run
 artifacts stay in the run and simply are not copied to this bundle.

@@ -85,12 +85,22 @@ or changed source bytes remain RED and are never repaired in place.
 `claims-review-v1.schema.json` describes a structural sidecar for claims and a
 review checklist. `ClaimBinding` links a stable `claim_id` to evidence artifact
 IDs and a validator identity/result; `ReviewChecklist` and `ReviewResponse`
-carry human row-level responses. The generic checks are limited to:
+carry human row-level responses. Each response also carries
+`checklist_sha256`, the canonical SHA-256 of the normalized checklist
+document; matching `checklist_id` values alone are not sufficient, so changing
+a row, required flag, deliverable binding, or metadata invalidates the
+response. A pre-hash v1 response can still be parsed for archival inspection,
+but validation classifies it as `legacy_unbound` and never accepts it as an
+approval; create a new response with the intended checklist's explicit digest
+before passing it to `write_review_response` (the writer never auto-binds an
+untrusted legacy record).
+The generic checks are limited to:
 
 - unique and portable IDs;
 - references that exist in the current run;
 - exact artifact byte/hash bindings;
 - recorded validator metadata;
+- exact checklist content/hash binding (in addition to its stable ID);
 - a review response bound to the exact deliverable bytes.
 
 The claim text, truth criteria, acceptable wording, and semantic validator are
@@ -102,6 +112,11 @@ review checklist never substitutes for watching the exact deliverable.
 Projects may describe narration, gameplay, BGM, and SFX as typed audio stems.
 The generic audio planner supports source binding, trim, delay, gain, fades,
 and deterministic ducking, plus the output sample-rate/channel contract. The
+channel contract is deliberately limited to the standard layouts from mono
+through 7.1 (1..8 channels); each delayed stem is normalized to its explicit
+layout before `adelay`, so every output channel receives the declared delay on
+the older FFmpeg builds used by supported integrations. Unsupported channel
+counts are rejected during planning rather than silently downmixed. The
 planner records the resulting FFmpeg invocation/filter graph for auditability.
 
 The project still chooses the music, licensing, language, voice, loudness
