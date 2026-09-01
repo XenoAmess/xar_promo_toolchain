@@ -1,0 +1,91 @@
+{
+  "format_version": 1,
+  "kind": "xar_promo_project_config",
+  "project": {
+    "id": "zhongguo-361-iteration1-demo",
+    "title": "ZhongGuo 361 Style · iteration 1 capability demo"
+  },
+  "pipeline": {
+    "adapter": "legacy-showcase-v1",
+    "preset": "zhongguo-361-iteration1-demo"
+  },
+  "locales": {
+    "narration": "zh-CN",
+    "subtitles": ["zh-CN", "en"]
+  },
+  "constraints": {
+    "duration_limit_seconds": 1200
+  },
+  "chapters": [
+    {
+      "id": "calibration",
+      "type": "still",
+      "state": "planned",
+      "title": {
+        "zh-CN": "校准会：讨论最不礼貌的名额",
+        "en": "Calibration: polite voices, impolite quotas"
+      },
+      "cues": [
+        {
+          "id": "calibration-001",
+          "narration": {
+            "zh-CN": "自动排名后、发榜前，玩家可以校准。",
+            "en": "After ranking and before publication, the player may calibrate."
+          },
+          "subtitles": {
+            "zh-CN": "自动排名后、发榜前，玩家可以校准。",
+            "en": "After ranking and before publication, the player may calibrate."
+          }
+        }
+      ],
+      "artifact_ids": ["calibration-event"]
+    },
+    {
+      "id": "scoreboard",
+      "type": "still",
+      "state": "planned",
+      "title": {
+        "zh-CN": "考核榜：终于有人告诉你排第几",
+        "en": "Scoreboard: someone finally tells you your rank"
+      },
+      "cues": [
+        {
+          "id": "scoreboard-001",
+          "narration": {
+            "zh-CN": "考核榜冻结本轮人物、KPI、名次和档位。",
+            "en": "The scoreboard freezes this cycle's officials, KPI, rank, and grade."
+          },
+          "subtitles": {
+            "zh-CN": "考核榜冻结本轮人物、KPI、名次和档位。",
+            "en": "The scoreboard freezes this cycle's officials, KPI, rank, and grade."
+          }
+        }
+      ],
+      "artifact_ids": ["scoreboard-panel"]
+    },
+    {
+      "id": "superior-result",
+      "type": "still",
+      "state": "planned",
+      "title": {
+        "zh-CN": "3.25 不是表情包：上司告身",
+        "en": "3.25 is not a meme: the superior's receipt"
+      },
+      "cues": [
+        {
+          "id": "superior-result-001",
+          "narration": {
+            "zh-CN": "3.25 把资源后果写进告身，也留下可追溯的本轮编号。",
+            "en": "A 3.25 writes resource consequences into the receipt and keeps a traceable cycle serial."
+          },
+          "subtitles": {
+            "zh-CN": "3.25 把资源后果写进告身，也留下可追溯的本轮编号。",
+            "en": "A 3.25 writes resource consequences into the receipt and keeps a traceable cycle serial."
+          }
+        }
+      ],
+      "artifact_ids": ["superior-result"]
+    }
+  ]
+}
+

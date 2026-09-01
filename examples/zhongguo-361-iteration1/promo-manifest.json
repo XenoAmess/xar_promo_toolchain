@@ -1,0 +1,120 @@
+{
+  "format_version": 1,
+  "kind": "zg361_chinese_first_promo_demo",
+  "project_status": "demo_fixture_only",
+  "source_project": "mod_zhongguo_style/promo/promo-manifest.json",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "primary_language": "zh-CN",
+  "subtitle_languages": ["zh-CN", "en"],
+  "skip_ck3_loading_opening": true,
+  "duration_limit_seconds": 1200,
+  "classification": "fixture-live acceptance stills; not a clean promotional recording",
+  "chapters": [
+    {
+      "id": "00-cold-open",
+      "type": "title_card",
+      "material_status": "generated",
+      "title_zh": "天朝特色 361 制：一期能力样例",
+      "title_en": "ZHONGGUO 361 STYLE: ITERATION 1 CAPABILITY DEMO",
+      "status": {
+        "zh": "能力演示，不是正式成片",
+        "en": "CAPABILITY DEMO · NOT A RELEASE VIDEO",
+        "classification": "demo-generated"
+      },
+      "cues": [
+        {
+          "zh": "欢迎来到天朝大厂：先校准，再发榜，最后解释这个 C 为什么是你。",
+          "en": "Welcome to the imperial megacorp: calibrate first, publish the board, then explain why the C is yours."
+        }
+      ]
+    },
+    {
+      "id": "01-calibration",
+      "type": "still",
+      "material_status": "fixture-live",
+      "title_zh": "校准会：用最礼貌的语气，讨论最不礼貌的名额",
+      "title_en": "CALIBRATION: POLITE VOICES, IMPOLITE QUOTAS",
+      "status": {
+        "zh": "验收夹具静帧；不代表干净连续录屏",
+        "en": "FIXTURE-LIVE STILL · NOT A CLEAN CONTINUOUS RECORDING",
+        "classification": "fixture-live-still"
+      },
+      "topics": ["calibration"],
+      "source": {
+        "path": "assets/calibration-event.png",
+        "bytes": 4693773,
+        "sha256": "8E1813D538BE9F95736D9F07EB88B7BCB719320D421EB37DFBCFCE649BD65AAB",
+        "label": "Copied ZhongGuo 361 iteration-1 acceptance fixture"
+      },
+      "cues": [
+        {
+          "zh": "自动排名后、发榜前，玩家可以校准：直接公示，或在两个分档边界交换两个人。",
+          "en": "After automatic ranking and before publication, the player may calibrate: publish as-is or swap two officials across a grade boundary."
+        },
+        {
+          "zh": "你能抬末名 3.75，也能把末名 3.5 压进 3.25；每次动笔都有黑幕风险。",
+          "en": "You can lift the last 3.75 or push the last 3.5 into 3.25; every pen stroke carries scandal risk."
+        }
+      ]
+    },
+    {
+      "id": "02-scoreboard",
+      "type": "still",
+      "material_status": "fixture-live",
+      "title_zh": "考核榜：终于有人告诉你到底排第几",
+      "title_en": "SCOREBOARD: SOMEONE FINALLY TELLS YOU YOUR RANK",
+      "status": {
+        "zh": "验收夹具静帧；数值仅作该证据的可见内容",
+        "en": "FIXTURE-LIVE STILL · VALUES ARE LIMITED TO THIS EVIDENCE",
+        "classification": "fixture-live-still"
+      },
+      "topics": ["scoreboard", "forced_distribution"],
+      "source": {
+        "path": "assets/scoreboard-panel.png",
+        "bytes": 3225633,
+        "sha256": "4B1D7157D3B999F2041BD840DBDEC841B94E7B60F9AEF7AA8FD99011B0337EE7",
+        "label": "Copied ZhongGuo 361 iteration-1 acceptance fixture"
+      },
+      "cues": [
+        {
+          "zh": "考核榜冻结人物、官职、KPI、价值观、名次、档位和连续次数，不是闪一下就没的通知。",
+          "en": "The board freezes officials, offices, KPI, values, rank, grade, and streak; it is not a disposable toast."
+        },
+        {
+          "zh": "最近一期榜单会冻结到下一次发榜，调任不会偷偷改写当期名单。",
+          "en": "The latest board stays frozen until the next publication, so a transfer cannot rewrite the current cycle."
+        }
+      ]
+    },
+    {
+      "id": "03-superior-result",
+      "type": "still",
+      "material_status": "fixture-live",
+      "title_zh": "3.25 不是表情包：上司告身与四重后果",
+      "title_en": "3.25 IS NOT A MEME: THE SUPERIOR'S RECEIPT",
+      "status": {
+        "zh": "验收夹具静帧；不宣称申诉连续闭环",
+        "en": "FIXTURE-LIVE STILL · NO CLAIM OF A COMPLETE APPEAL LOOP",
+        "classification": "fixture-live-still"
+      },
+      "topics": ["superior_review", "grade_325"],
+      "source": {
+        "path": "assets/superior-result.png",
+        "bytes": 5045492,
+        "sha256": "93ECFAD072711B6CAA1759FEFA267F492897E36B8CE14905230541A7F7EAB46F",
+        "label": "Copied ZhongGuo 361 iteration-1 acceptance fixture"
+      },
+      "cues": [
+        {
+          "zh": "3.25 同时影响地方国库、个人金币、贤能和一年俸禄；组织说这是共同承担。",
+          "en": "A 3.25 hits the local treasury, personal gold, merit, and one year of salary; the organization calls it shared accountability."
+        },
+        {
+          "zh": "罚没保存精确金额和本轮编号，翻案退的是这次实际扣的钱。",
+          "en": "The penalty keeps exact amounts and the cycle serial; a reversal refunds what this cycle actually took."
+        }
+      ]
+    }
+  ]
+}
+

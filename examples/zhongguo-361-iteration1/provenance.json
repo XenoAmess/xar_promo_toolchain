@@ -1,0 +1,32 @@
+{
+  "format_version": 1,
+  "kind": "xar_promo_demo_provenance",
+  "demo_id": "zhongguo-361-iteration1",
+  "source_repository": "XenoAmess/ck3_eternal_recurrence",
+  "source_tree": "mod_zhongguo_style/promo/imported/fixture-live-zga-20260829-061314-ea5f04ad",
+  "source_capture_result": "GREEN",
+  "source_capture_classification": "fixture-live acceptance stills; not a clean promotional recording",
+  "loading_excluded": true,
+  "redistribution_note": "Game screenshots are retained as a capability demo and inherit the source project's attribution/IP boundaries; do not present them as an official CK3 asset pack.",
+  "assets": [
+    {
+      "path": "assets/calibration-event.png",
+      "source_path": "mod_zhongguo_style/promo/imported/fixture-live-zga-20260829-061314-ea5f04ad/cell/06_calibration_event.png",
+      "bytes": 4693773,
+      "sha256": "8E1813D538BE9F95736D9F07EB88B7BCB719320D421EB37DFBCFCE649BD65AAB"
+    },
+    {
+      "path": "assets/scoreboard-panel.png",
+      "source_path": "mod_zhongguo_style/promo/imported/fixture-live-zga-20260829-061314-ea5f04ad/cell/08_scoreboard_panel_raw.png",
+      "bytes": 3225633,
+      "sha256": "4B1D7157D3B999F2041BD840DBDEC841B94E7B60F9AEF7AA8FD99011B0337EE7"
+    },
+    {
+      "path": "assets/superior-result.png",
+      "source_path": "mod_zhongguo_style/promo/imported/fixture-live-zga-20260829-061314-ea5f04ad/cell/10_superior_result.png",
+      "bytes": 5045492,
+      "sha256": "93ECFAD072711B6CAA1759FEFA267F492897E36B8CE14905230541A7F7EAB46F"
+    }
+  ]
+}
+
