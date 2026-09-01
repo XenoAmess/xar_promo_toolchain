@@ -8,7 +8,10 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-GPL3_SHA256 = "230184F60BAE2FEAF244F10A8BAC053C8FF33A183BCC365B4D8B876D2B7F4809"
+# Git checks out this text file with the platform's configured line endings.
+# Hash the canonical LF form so the verbatim license contract is portable
+# across the Windows and Linux runners used by this repository.
+GPL3_LF_SHA256 = "3972DC9744F6499F0F9B2DBF76696F2AE7AD8AF9B23DDE66D6AF86C9DFB36986"
 
 
 class PackagingContractTests(unittest.TestCase):
@@ -22,9 +25,10 @@ class PackagingContractTests(unittest.TestCase):
         self.assertEqual("GPL-3.0-only", project["license"])
         self.assertEqual(["LICENSE"], project["license-files"])
         packaged_license = (PROJECT_ROOT / "LICENSE").read_bytes()
+        canonical_license = packaged_license.replace(b"\r\n", b"\n")
         self.assertEqual(
-            GPL3_SHA256,
-            hashlib.sha256(packaged_license).hexdigest().upper(),
+            GPL3_LF_SHA256,
+            hashlib.sha256(canonical_license).hexdigest().upper(),
         )
 
     def test_build_backend_minimum_supports_the_declared_pep639_fields(self) -> None:
