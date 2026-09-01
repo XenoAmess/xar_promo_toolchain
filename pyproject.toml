@@ -19,6 +19,11 @@ classifiers = [
   "Programming Language :: Python :: 3 :: Only",
 ]
 
+[project.urls]
+Homepage = "https://github.com/XenoAmess/xar_promo_toolchain"
+Repository = "https://github.com/XenoAmess/xar_promo_toolchain"
+Issues = "https://github.com/XenoAmess/xar_promo_toolchain/issues"
+
 [project.optional-dependencies]
 tts = ["edge-tts==7.2.8"]
 visual = ["Pillow==12.3.0"]
