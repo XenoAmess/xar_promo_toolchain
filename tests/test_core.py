@@ -192,14 +192,17 @@ class ConfigRunSplitTests(unittest.TestCase):
 
 
 class LegacyCompatibilityTests(unittest.TestCase):
-    def test_repository_smoke_manifest_remains_readable(self) -> None:
-        repository = Path(__file__).resolve().parents[2]
-        legacy = repository / "mod_zhongguo_style" / "promo" / "smoke-manifest.json"
+    def test_iteration_one_demo_manifest_remains_readable(self) -> None:
+        # The standalone distribution carries a small, sanitized ZhongGuo
+        # iteration-one sample.  The full integration project remains in the
+        # CK3 host repository and must not be reached through a parent path.
+        repository = Path(__file__).resolve().parents[1]
+        legacy = repository / "examples" / "zhongguo-361-iteration1" / "promo-manifest.json"
         if not legacy.is_file():
-            self.skipTest("monorepo legacy fixture is not present in standalone checkout")
+            self.skipTest("iteration-one demo fixture is not present in this checkout")
         loaded = load_document(legacy)
         self.assertEqual("legacy-showcase-v1", loaded.source_format)
-        self.assertEqual(1, loaded.chapter_count)
+        self.assertEqual(4, loaded.chapter_count)
 
     def test_unknown_native_version_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

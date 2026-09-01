@@ -2,7 +2,7 @@
 
 This directory is an authoring-only ProjectConfig/schema example. After
 installing the package as described in the root README, run its real executable
-check from the `xar_promo_toolchain` root:
+check from this repository's root:
 
 ```powershell
 xar-promo validate examples/minimal/promo-project.json

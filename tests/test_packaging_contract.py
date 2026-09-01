@@ -8,8 +8,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY_ROOT = PROJECT_ROOT.parent
-GPL3_SHA256 = "3972DC9744F6499F0F9B2DBF76696F2AE7AD8AF9B23DDE66D6AF86C9DFB36986"
+GPL3_SHA256 = "230184F60BAE2FEAF244F10A8BAC053C8FF33A183BCC365B4D8B876D2B7F4809"
 
 
 class PackagingContractTests(unittest.TestCase):
@@ -27,9 +26,6 @@ class PackagingContractTests(unittest.TestCase):
             GPL3_SHA256,
             hashlib.sha256(packaged_license).hexdigest().upper(),
         )
-        repository_license = REPOSITORY_ROOT / "LICENSE"
-        if repository_license.is_file():
-            self.assertEqual(repository_license.read_bytes(), packaged_license)
 
     def test_build_backend_minimum_supports_the_declared_pep639_fields(self) -> None:
         requirements = self.pyproject["build-system"]["requires"]

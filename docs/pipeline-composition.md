@@ -331,7 +331,7 @@ prepared WAV narration, performs validate-only and full runs, writes a pending
 audit candidate, and retains every command audit and intermediate file:
 
 ```powershell
-py xar_promo_toolchain/scripts/run_pipeline_smoke.py `
+py scripts/run_pipeline_smoke.py `
   --workdir C:/temp/xar-promo-smoke-attempt-001 `
   --ffmpeg C:/tools/ffmpeg/bin/ffmpeg.exe `
   --ffprobe C:/tools/ffmpeg/bin/ffprobe.exe

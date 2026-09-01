@@ -1,5 +1,10 @@
 # 旧宣传视频入口兼容合同
 
+本文中的 `tools/...` 与 `mod_zhongguo_style/...` 均指 CK3 集成仓库
+([`XenoAmess/ck3_eternal_recurrence`](https://github.com/XenoAmess/ck3_eternal_recurrence))
+中的历史入口；独立发布仓不再通过父目录导入这些文件。独立仓只保留
+通用兼容层测试和 `examples/zhongguo-361-iteration1/` 能力样例。
+
 本文冻结以下两个现行入口的可观察行为，供后续将实现迁入
 `xar_promo_toolchain` 后编写兼容 wrapper：
 

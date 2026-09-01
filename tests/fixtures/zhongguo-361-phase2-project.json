@@ -1,0 +1,104 @@
+{
+  "format_version": 1,
+  "kind": "xar_promo_project_config",
+  "project": {
+    "id": "zhongguo-361-phase2-promo",
+    "title": "ZhongGuo 361 phase-two promo test fixture"
+  },
+  "pipeline": {
+    "adapter": "ck3",
+    "preset": "zhongguo_361_phase2"
+  },
+  "locales": {
+    "narration": "zh-CN",
+    "subtitles": [
+      "zh-CN",
+      "en"
+    ]
+  },
+  "constraints": {
+    "duration_limit_seconds": 1200
+  },
+  "chapters": [
+    {
+      "id": "phase2_minimal_recap",
+      "type": "generated_card",
+      "state": "planned",
+      "title": {"zh-CN": "phase2_minimal_recap", "en": "phase2_minimal_recap"},
+      "cues": [],
+      "artifact_ids": []
+    },
+    {
+      "id": "phase2_fact_quota_calibration",
+      "type": "ck3_clean_span",
+      "state": "planned",
+      "title": {"zh-CN": "phase2_fact_quota_calibration", "en": "phase2_fact_quota_calibration"},
+      "cues": [],
+      "artifact_ids": []
+    },
+    {
+      "id": "phase2_receipt_appeal_pip",
+      "type": "ck3_clean_span",
+      "state": "planned",
+      "title": {"zh-CN": "phase2_receipt_appeal_pip", "en": "phase2_receipt_appeal_pip"},
+      "cues": [],
+      "artifact_ids": []
+    },
+    {
+      "id": "phase2_manager_governance",
+      "type": "ck3_clean_span",
+      "state": "planned",
+      "title": {"zh-CN": "phase2_manager_governance", "en": "phase2_manager_governance"},
+      "cues": [],
+      "artifact_ids": []
+    },
+    {
+      "id": "phase2_promotion_compensation",
+      "type": "ck3_clean_span",
+      "state": "planned",
+      "title": {"zh-CN": "phase2_promotion_compensation", "en": "phase2_promotion_compensation"},
+      "cues": [],
+      "artifact_ids": []
+    },
+    {
+      "id": "phase2_hc_workforce",
+      "type": "ck3_clean_span",
+      "state": "planned",
+      "title": {"zh-CN": "phase2_hc_workforce", "en": "phase2_hc_workforce"},
+      "cues": [],
+      "artifact_ids": []
+    },
+    {
+      "id": "phase2_projects_metrics",
+      "type": "ck3_clean_span",
+      "state": "planned",
+      "title": {"zh-CN": "phase2_projects_metrics", "en": "phase2_projects_metrics"},
+      "cues": [],
+      "artifact_ids": []
+    },
+    {
+      "id": "phase2_incidents_operations",
+      "type": "ck3_clean_span",
+      "state": "planned",
+      "title": {"zh-CN": "phase2_incidents_operations", "en": "phase2_incidents_operations"},
+      "cues": [],
+      "artifact_ids": []
+    },
+    {
+      "id": "phase2_cross_cycle_endgame",
+      "type": "ck3_clean_span",
+      "state": "planned",
+      "title": {"zh-CN": "phase2_cross_cycle_endgame", "en": "phase2_cross_cycle_endgame"},
+      "cues": [],
+      "artifact_ids": []
+    },
+    {
+      "id": "phase2_finale",
+      "type": "generated_card",
+      "state": "planned",
+      "title": {"zh-CN": "phase2_finale", "en": "phase2_finale"},
+      "cues": [],
+      "artifact_ids": []
+    }
+  ]
+}

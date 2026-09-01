@@ -5,6 +5,12 @@ This guide describes how to move a working promotional-video builder into
 is based on two repository entry points that have already completed the first two
 migration stages:
 
+The wrappers and their project-specific regression suites live in the CK3 host
+integration repository ([`XenoAmess/ck3_eternal_recurrence`](https://github.com/XenoAmess/ck3_eternal_recurrence)),
+not in this standalone checkout. Paths shown below are therefore integration
+paths (or historical paths) and are not parent-directory dependencies of the
+package; standalone CI covers the generic seams and bundled examples.
+
 - `tools/build_full_agent_showcase.py`;
 - `mod_zhongguo_style/tools/build_promo_video.py`.
 
@@ -55,7 +61,7 @@ Before extracting code, record and test what callers can observe:
 Create regression tests before replacing a seam. Both example builders retain
 their existing suites (`tools/test_build_full_agent_showcase.py` and
 `mod_zhongguo_style/tools/test_promo_video.py`), while
-`xar_promo_toolchain/tests/test_legacy.py` covers package delegation and legacy
+`tests/test_legacy.py` covers package delegation and legacy
 edge bytes. Run normal and `python -O` variants; a test that relies only on
 `assert` is not an optimization-safe gate.
 

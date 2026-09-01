@@ -4,20 +4,38 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import os
 from pathlib import Path
 from unittest import mock
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY_ROOT = PACKAGE_ROOT.parent
 sys.path.insert(0, str(PACKAGE_ROOT / "src"))
-sys.path.insert(0, str(REPOSITORY_ROOT / "tools"))
 
-import build_full_agent_showcase as showcase  # noqa: E402
+# The legacy showcase wrapper belongs to the CK3 integration repository, not
+# this standalone distribution.  Keep its parity tests available for an
+# integration checkout by opting in with an explicit tools-directory path;
+# standalone package CI otherwise exercises the generic compatibility layer.
+showcase = None
+_legacy_tools = os.environ.get("XAR_PROMO_LEGACY_BUILDER_ROOT")
+if _legacy_tools:
+    _legacy_tools_path = Path(_legacy_tools).expanduser().resolve()
+    if _legacy_tools_path.is_dir():
+        sys.path.insert(0, str(_legacy_tools_path))
+        try:
+            import build_full_agent_showcase as showcase  # type: ignore[no-redef]  # noqa: E402
+        except ModuleNotFoundError:
+            showcase = None
+
 import xar_promo.legacy as legacy  # noqa: E402
 from xar_promo.media import ffprobe_command  # noqa: E402
 
 
+@unittest.skipUnless(
+    showcase is not None,
+    "legacy showcase parity tests run in the CK3 integration repository; "
+    "set XAR_PROMO_LEGACY_BUILDER_ROOT to its tools directory",
+)
 class LegacyMediaDelegationTests(unittest.TestCase):
     def test_probe_keeps_legacy_dict_while_using_package_command_and_parser(self) -> None:
         ffprobe = Path("D:/media tools/ffprobe.exe")

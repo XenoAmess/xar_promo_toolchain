@@ -4,6 +4,12 @@
 
 `xar_promo_toolchain` is the reusable metadata, evidence-retention, capture-adapter, TTS, layout, media-process, pipeline, audit, review, and offline-export foundation for promotional-video pipelines. Its ten-command CLI covers the project/run lifecycle plus dependency-injected plan/build, automated audit, pending human review, explicit sign-off, and local release-bundle export. Projects still own their adapter, preset, `PipelineComposer`, executables, and content policy; the package is not a timeline editor, capture runner, or publication service.
 
+This is a standalone repository. The `tools/` and `mod_zhongguo_style/` paths
+used in the migration notes below are historical paths in the CK3 integration
+repository ([`XenoAmess/ck3_eternal_recurrence`](https://github.com/XenoAmess/ck3_eternal_recurrence));
+they are not required parent directories for this package. The checked-in
+standalone integration sample is `examples/zhongguo-361-iteration1/`.
+
 This distinction is important: a valid manifest, a preserved MP4, or a command acknowledgement is evidence about that individual operation. None of them, by itself, means that a video passed content review or was published.
 
 ## Three-layer architecture
@@ -26,7 +32,16 @@ The dependency direction is downward. Generic code must not import a CK3 project
 | CK3 adapter | `src/xar_promo/adapters/ck3/` | Read-only verification and projection of a CK3 capture bundle: report, evidence index, raw capture, ordered marks, independently evidenced clean spans, and an end-of-operation source-integrity check | OCR, capture orchestration, repairing a failed run, choosing a story, or deciding whether a particular mod claim is sufficiently demonstrated |
 | Project preset | `src/xar_promo/presets/`, a standard checked-in `ProjectConfig`, and the project's legacy wrappers during migration | Chapter order, narration, subtitles, visual identity, required CK3 marks/spans, real-character policy, voice, duration limit, humor/tone, and release gates | Changes to generic schemas or CK3 evidence semantics merely to accommodate one campaign |
 
-The first concrete preset is `xar_promo.presets.zhongguo_361_phase2`. It reads the standard `mod_zhongguo_style/promo/phase2-promo-project.json`, derives CK3 span/mark requirements from configured chapters, fixes the `zh-CN-XiaoxiaoNeural` request, and validates the sequel's duration, historical-character provenance, and clean-UI attestations. It deliberately returns a non-release-ready capture candidate while the project-specific live matrix and full-duration human review remain outstanding. Rendering and the established release workflow still enter through `mod_zhongguo_style/tools/` during migration.
+The first concrete preset is `xar_promo.presets.zhongguo_361_phase2`. It reads a
+project-supplied `ProjectConfig` (the CK3 integration repository currently keeps
+the canonical file at `mod_zhongguo_style/promo/phase2-promo-project.json`),
+derives CK3 span/mark requirements from configured chapters, fixes the
+`zh-CN-XiaoxiaoNeural` request, and validates the sequel's duration,
+historical-character provenance, and clean-UI attestations. It deliberately
+returns a non-release-ready capture candidate while the project-specific live
+matrix and full-duration human review remain outstanding. Rendering and the
+established release workflow still enter through the integration repository's
+`mod_zhongguo_style/tools/` during migration.
 
 The acceptance runner exposes a separate `--phase2-promo-capture` producer mode for
 that preset.  It uses the eight-span contract in

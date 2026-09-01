@@ -16,12 +16,12 @@ path. Install the release wheel directly, install a downloaded local artifact,
 or build from a reviewed trusted source checkout:
 
 ```text
-python -m pip install https://github.com/XenoAmess/ck3_eternal_recurrence/releases/download/xar-promo-v0.1.0/xar_promo_toolchain-0.1.0-py3-none-any.whl
+python -m pip install https://github.com/XenoAmess/xar_promo_toolchain/releases/download/v0.1.0/xar_promo_toolchain-0.1.0-py3-none-any.whl
 ```
 
-The repository workflow
-[`promo-toolchain-release.yml`](../../.github/workflows/promo-toolchain-release.yml)
-is a package release for the `xar-promo-v<version>` tag namespace (or an
+The standalone repository workflow
+[`promo-toolchain-release.yml`](../.github/workflows/promo-toolchain-release.yml)
+is a package release for the `v<version>` tag namespace (or an
 artifact-only explicit manual run). It runs the package tests in normal and optimized
 mode, builds the wheel and sdist, checks their metadata with `twine check`,
 installs the wheel in a fresh environment, verifies the installed contract, and

@@ -17,20 +17,21 @@ ten commands, missing Pillow or `edge-tts` despite their presence in the main
 environment, or `xar_promo.__file__` pointing at the main worktree while the
 attempt is running from a secondary worktree.
 
-Use the secondary worktree's own agreed relative virtual environment when it
-exists. If it does not exist, select the main worktree interpreter explicitly
-and prepend the current secondary source tree to `PYTHONPATH`:
+Use the consumer checkout's own agreed relative virtual environment when it
+exists. If it does not exist, select the consumer's verified interpreter
+explicitly and prepend this standalone checkout's `src` directory to
+`PYTHONPATH`:
 
 ```powershell
 $taskRoot = (Resolve-Path .).Path
-$mainWorktree = "C:\path\to\main-worktree"
-$localPython = Join-Path $taskRoot "tools\.venv\Scripts\python.exe"
+$mainWorktree = "C:\path\to\consumer-worktree"
+$localPython = Join-Path $taskRoot ".venv\Scripts\python.exe"
 $promoPython = if (Test-Path -LiteralPath $localPython) {
   (Resolve-Path $localPython).Path
 } else {
-  (Resolve-Path (Join-Path $mainWorktree "tools\.venv\Scripts\python.exe")).Path
+  (Resolve-Path (Join-Path $mainWorktree ".venv\Scripts\python.exe")).Path
 }
-$promoSource = (Resolve-Path (Join-Path $taskRoot "xar_promo_toolchain\src")).Path
+$promoSource = (Resolve-Path (Join-Path $taskRoot "src")).Path
 $env:PYTHONPATH = @($promoSource, $taskRoot, $env:PYTHONPATH) -join [IO.Path]::PathSeparator
 
 & $promoPython -c "import sys, xar_promo; print(sys.executable); print(sys.version); print(xar_promo.__file__)"
@@ -38,8 +39,8 @@ $env:PYTHONPATH = @($promoSource, $taskRoot, $env:PYTHONPATH) -join [IO.Path]::P
 & $promoPython -c "import importlib.util as u; print('Pillow/PIL:', u.find_spec('PIL')); print('edge_tts:', u.find_spec('edge_tts'))"
 ```
 
-The module path must resolve beneath the current secondary worktree's
-`xar_promo_toolchain\src`. The frozen CLI lists exactly `init`, `start-run`,
+The module path must resolve beneath the current standalone checkout's `src`
+(or to the selected installed distribution). The frozen CLI lists exactly `init`, `start-run`,
 `validate`, `preserve`, `signoff`, `plan`, `build`, `audit`, `review`, and
 `export`. Until both checks agree, classify the result as an environment RED,
 not a product-code RED.

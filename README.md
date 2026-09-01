@@ -22,9 +22,9 @@ There is no `publish` or upload command. `audit`, `review`, and `signoff` are in
 The release workflow builds and checks the wheel and source distribution,
 validates the sdist contents, performs isolated installs of both artifacts,
 writes `SHA256SUMS`, and uploads the checked files as a GitHub Actions artifact.
-For a `xar-promo-v<version>` tag it also publishes those exact files as a GitHub
-Release; a manual workflow run remains artifact-only. Version 0.1.0 is available
-from the [GitHub Release](https://github.com/XenoAmess/ck3_eternal_recurrence/releases/tag/xar-promo-v0.1.0).
+For a `v<version>` tag it also publishes those exact files as a GitHub Release;
+a manual workflow run remains artifact-only. Version 0.1.0 is available from
+the [GitHub Release](https://github.com/XenoAmess/xar_promo_toolchain/releases/tag/v0.1.0).
 The workflow does not publish to PyPI or another package index, upload media, or
 start CK3/FFmpeg. See
 [Installation and cross-machine delivery](docs/installation.md) for the exact

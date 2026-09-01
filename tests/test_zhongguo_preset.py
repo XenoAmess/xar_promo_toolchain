@@ -13,7 +13,6 @@ from unittest.mock import patch
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY_ROOT = PACKAGE_ROOT.parent
 sys.path.insert(0, str(PACKAGE_ROOT / "src"))
 
 from xar_promo.model import ProjectConfig  # noqa: E402
@@ -39,7 +38,7 @@ from xar_promo.project import load_document  # noqa: E402
 
 
 PROJECT_CONFIG_PATH = (
-    REPOSITORY_ROOT / "mod_zhongguo_style" / "promo" / "phase2-promo-project.json"
+    PACKAGE_ROOT / "tests" / "fixtures" / "zhongguo-361-phase2-project.json"
 )
 
 
