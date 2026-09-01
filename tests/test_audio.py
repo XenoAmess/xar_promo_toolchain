@@ -94,6 +94,16 @@ class AudioModelTests(unittest.TestCase):
                 channels=9,
             )
 
+    def test_amix_normalize_is_boolean_and_defaults_to_legacy_true(self) -> None:
+        spec = AudioMixSpec((AudioStem("voice", Path("voice.wav")),))
+        self.assertTrue(spec.normalize)
+        self.assertTrue(spec.to_mapping()["normalize"])
+        with self.assertRaisesRegex(AudioMixValidationError, "normalize must be boolean"):
+            AudioMixSpec(
+                (AudioStem("voice", Path("voice.wav")),),
+                normalize=1,  # type: ignore[arg-type]
+            )
+
 
 class AudioPlanTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -134,7 +144,7 @@ class AudioPlanTests(unittest.TestCase):
             "afade=t=in",
             "afade=t=out",
             "between(t,2.000000,5.000000)",
-            "amix=inputs=2:duration=longest:dropout_transition=0",
+            "amix=inputs=2:duration=longest:dropout_transition=0:normalize=1",
             "[a]",
         ):
             with self.subTest(expected=expected):
@@ -142,6 +152,23 @@ class AudioPlanTests(unittest.TestCase):
         mapping = first.to_mapping()
         self.assertEqual(mapping["filtergraph"], graph)
         self.assertEqual(mapping["input_start_index"], 1)
+
+    def test_amix_normalize_false_is_explicit_in_filtergraph(self) -> None:
+        spec = AudioMixSpec(
+            (
+                AudioStem("voice", Path("voice.wav")),
+                AudioStem("music", Path("music.wav")),
+            ),
+            duration_seconds=2,
+            normalize=False,
+        )
+        plan = plan_audio_mix(spec)
+        self.assertFalse(spec.to_mapping()["normalize"])
+        self.assertIn(
+            "amix=inputs=2:duration=longest:dropout_transition=0:normalize=0",
+            plan.filtergraph,
+        )
+        self.assertNotIn(":normalize=1", plan.filtergraph)
 
     def test_fade_out_uses_clipped_effective_end_when_trim_exceeds_target(self) -> None:
         """A long stem must fade at the render boundary, not after it."""

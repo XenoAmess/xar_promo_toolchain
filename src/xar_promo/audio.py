@@ -304,13 +304,22 @@ class AudioStem:
 
 @dataclass(frozen=True, slots=True)
 class AudioMixSpec:
-    """An ordered set of stems normalized to one output duration."""
+    """An ordered set of stems normalized to one output duration.
+
+    ``normalize`` is passed directly to FFmpeg's ``amix`` filter.  It defaults
+    to ``True`` to retain the v0.2 behaviour and FFmpeg's historical default;
+    callers mixing several already-levelled stems can set it to ``False`` so
+    the declared per-stem gains are not divided by the number of inputs.
+    Peak protection, if desired, remains an explicit project-side filter or
+    limiter policy rather than an implicit loudness judgement.
+    """
 
     stems: tuple[AudioStem, ...]
     duration_seconds: float | None = None
     sample_rate: int = 48_000
     channels: int = 2
     metadata: Mapping[str, object] = field(default_factory=dict)
+    normalize: bool = True
 
     def __post_init__(self) -> None:
         try:
@@ -333,6 +342,8 @@ class AudioMixSpec:
             raise AudioMixValidationError(
                 f"audio mix channels must be an integer in the supported range 1..{_MAX_CHANNELS}"
             )
+        if not isinstance(self.normalize, bool):
+            raise AudioMixValidationError("audio mix normalize must be boolean")
         if not isinstance(self.metadata, Mapping):
             raise AudioMixValidationError("audio mix metadata must be a mapping")
         metadata: dict[str, object] = {}
@@ -352,6 +363,7 @@ class AudioMixSpec:
         object.__setattr__(self, "duration_seconds", duration)
         object.__setattr__(self, "sample_rate", sample_rate)
         object.__setattr__(self, "channels", channels)
+        object.__setattr__(self, "normalize", self.normalize)
         object.__setattr__(self, "metadata", MappingProxyType(metadata))
 
     def to_mapping(self) -> dict[str, object]:
@@ -359,6 +371,7 @@ class AudioMixSpec:
             "stems": [item.to_mapping() for item in self.stems],
             "sample_rate": self.sample_rate,
             "channels": self.channels,
+            "normalize": self.normalize,
         }
         if self.duration_seconds is not None:
             result["duration_seconds"] = _format_seconds(self.duration_seconds)
@@ -682,7 +695,8 @@ def _build_filtergraph(
         chains.append(
             "".join(labels)
             + f"amix=inputs={len(labels)}:duration=longest:"
-            "dropout_transition=0,"
+            "dropout_transition=0:"
+            f"normalize={1 if spec.normalize else 0},"
             f"aresample={rate}:async=0,"
             + _channel_format(channel_count)
             + f",apad,atrim=duration={target_text},asetpts=N/SR/TB[{output_label}]"

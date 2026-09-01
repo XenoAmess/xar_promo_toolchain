@@ -119,6 +119,13 @@ the older FFmpeg builds used by supported integrations. Unsupported channel
 counts are rejected during planning rather than silently downmixed. The
 planner records the resulting FFmpeg invocation/filter graph for auditability.
 
+`AudioMixSpec.normalize` is an explicit boolean passed to FFmpeg's `amix`
+filter and defaults to `true` for compatibility. Set it to `false` when stems
+have already been levelled and should not be divided by the number of inputs;
+pair that choice with a project-owned gain/limiter policy when simultaneous
+stems could exceed 0 dBFS. xAR records the choice but does not make a loudness
+or clipping judgement.
+
 The project still chooses the music, licensing, language, voice, loudness
 policy, and artistic mix. The legacy single-audio render path remains valid;
 projects can migrate to the multi-track planner without changing the stable
