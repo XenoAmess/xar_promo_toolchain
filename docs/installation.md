@@ -9,8 +9,7 @@ The machine-readable version of this contract is installed as
 `xar_promo/schemas/install-contract-v1.json`. It is part of both the wheel and
 sdist and can be read through `importlib.resources` without a source checkout.
 
-Version 0.1.0 is published as a signed-by-tag GitHub Release, but is **not
-published to PyPI or another public Python index**. A command such as
+Version 0.1.0 is published as a signed-by-tag GitHub Release, but is **not published to PyPI or another public Python index**. A command such as
 `pip install xar-promo-toolchain` is therefore not an available distribution
 path. Install the release wheel directly, install a downloaded local artifact,
 or build from a reviewed trusted source checkout:
