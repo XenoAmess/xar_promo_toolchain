@@ -1,6 +1,7 @@
 # ADR: Generic media contracts versus Vivhite production logic
 
-Date: 2026-09-02  
+Date: 2026-09-02
+
 Status: Accepted
 
 ## Decision
