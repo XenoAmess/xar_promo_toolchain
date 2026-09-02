@@ -34,18 +34,26 @@ The release workflow builds and checks the wheel and source distribution,
 validates the sdist contents, performs isolated installs of both artifacts,
 writes `SHA256SUMS`, and uploads the checked files as a GitHub Actions artifact.
 For a `v<version>` tag it also publishes those exact files as a GitHub Release;
-manual workflow runs remain artifact-only. The `v0.2.0` tag run passed the
-workflow and published the checked bytes above. The workflow does not publish
-to PyPI or another package index, upload media, or start a game/recorder. See
+manual workflow runs remain artifact-only. The historical `v0.2.0` tag run
+passed the workflow; the current `v0.2.1` tag run passed it as well and
+published the checked bytes in the v0.2.1 release below. The workflow does not
+publish to PyPI or another package index, upload media, or start a game/recorder. See
 [Installation and cross-machine delivery](docs/installation.md) for the exact
 artifact, reproducibility, and trust boundaries.
 
 ### 0.2.1 status
 
 Version 0.2.1 is the patch release for delayed-stem fade ordering. It is cut
-from the `v0.2.1` tag and is published as a GitHub Release after the same
-packaging and compatibility workflow passes. The release is not published to
-PyPI; consumers should verify its `SHA256SUMS` and pin the exact artifact.
+from the `v0.2.1` tag and is published as the [v0.2.1 GitHub
+Release](https://github.com/XenoAmess/xar_promo_toolchain/releases/tag/v0.2.1)
+after the same packaging and compatibility workflow passed. The release is not
+published to PyPI; consumers should verify its `SHA256SUMS` and pin the exact
+artifact. The published artifact digests are:
+
+```text
+f8de0711415e7fce2bf07a34d3db4edc0593f32ba1cb61034946665e27014621  xar_promo_toolchain-0.2.1-py3-none-any.whl
+56a712c03078a67a856f861d8c619dcdbd17967a4f26645c9c6e1643d14e4ad5  xar_promo_toolchain-0.2.1.tar.gz
+```
 
 ## Install and inspect
 

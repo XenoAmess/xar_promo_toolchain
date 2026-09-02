@@ -94,15 +94,15 @@ artifact source. Check the received bytes before installation:
 
 ```powershell
 # Windows PowerShell; compare the printed Hash with the independently supplied value
-Get-FileHash -Algorithm SHA256 .\dist\xar_promo_toolchain-0.2.0-py3-none-any.whl
+Get-FileHash -Algorithm SHA256 .\dist\xar_promo_toolchain-0.2.1-py3-none-any.whl
 ```
 
 ```sh
 # Linux
-sha256sum ./dist/xar_promo_toolchain-0.2.0-py3-none-any.whl
+sha256sum ./dist/xar_promo_toolchain-0.2.1-py3-none-any.whl
 
 # macOS
-shasum -a 256 ./dist/xar_promo_toolchain-0.2.0-py3-none-any.whl
+shasum -a 256 ./dist/xar_promo_toolchain-0.2.1-py3-none-any.whl
 ```
 
 Stop if the values differ. A digest detects changed transfer bytes; it does not
@@ -113,11 +113,11 @@ resulting digest before transferring the artifact.
 ### Wheel (recommended for transfer and offline use)
 
 ```powershell
-python -m pip install .\dist\xar_promo_toolchain-0.2.0-py3-none-any.whl
+python -m pip install .\dist\xar_promo_toolchain-0.2.1-py3-none-any.whl
 ```
 
 ```sh
-python -m pip install ./dist/xar_promo_toolchain-0.2.0-py3-none-any.whl
+python -m pip install ./dist/xar_promo_toolchain-0.2.1-py3-none-any.whl
 ```
 
 The wheel contains the Python package, the console entry point, the native
@@ -129,11 +129,11 @@ plugin.
 ### Source distribution
 
 ```powershell
-python -m pip install .\dist\xar_promo_toolchain-0.2.0.tar.gz
+python -m pip install .\dist\xar_promo_toolchain-0.2.1.tar.gz
 ```
 
 ```sh
-python -m pip install ./dist/xar_promo_toolchain-0.2.0.tar.gz
+python -m pip install ./dist/xar_promo_toolchain-0.2.1.tar.gz
 ```
 
 Installing an sdist builds a wheel locally and therefore needs its declared
@@ -167,9 +167,9 @@ obtain its wheel and all build requirements through the trusted wheelhouse
 process instead; installing the already-built toolchain wheel needs no build
 frontend.
 
-The expected 0.2.0 outputs are
-`dist/xar_promo_toolchain-0.2.0-py3-none-any.whl` and
-`dist/xar_promo_toolchain-0.2.0.tar.gz`.
+The expected 0.2.1 outputs are
+`dist/xar_promo_toolchain-0.2.1-py3-none-any.whl` and
+`dist/xar_promo_toolchain-0.2.1.tar.gz`.
 
 ## 3. Install only the optional capabilities you need
 
@@ -191,7 +191,7 @@ For a local wheel or sdist, install the artifact first and then install the
 exact optional requirements needed by that deployment:
 
 ```sh
-python -m pip install ./dist/xar_promo_toolchain-0.2.0-py3-none-any.whl
+python -m pip install ./dist/xar_promo_toolchain-0.2.1-py3-none-any.whl
 python -m pip install "edge-tts==7.2.8" "Pillow==12.3.0"
 ```
 
@@ -222,20 +222,20 @@ because Pillow wheels are platform-specific.
 
 Start from a trusted source checkout or a local wheel whose SHA-256 has already
 been checked as described above. There is intentionally no public-index copy of
-version 0.2.0 for pip to download. The GitHub release assets are the canonical
+version 0.2.1 for pip to download. The GitHub release assets are the canonical
 distribution; the published annotated tag is not GPG-signed, so environments
 that require cryptographic tag signatures must reject it or apply a separate
 trust policy.
 
 ```powershell
 New-Item -ItemType Directory -Force wheelhouse | Out-Null
-Copy-Item .\dist\xar_promo_toolchain-0.2.0-py3-none-any.whl wheelhouse\
+Copy-Item .\dist\xar_promo_toolchain-0.2.1-py3-none-any.whl wheelhouse\
 python -m pip download --dest wheelhouse "edge-tts==7.2.8" "Pillow==12.3.0"
 ```
 
 ```sh
 mkdir -p wheelhouse
-cp ./dist/xar_promo_toolchain-0.2.0-py3-none-any.whl wheelhouse/
+cp ./dist/xar_promo_toolchain-0.2.1-py3-none-any.whl wheelhouse/
 python -m pip download --dest wheelhouse "edge-tts==7.2.8" "Pillow==12.3.0"
 ```
 
@@ -243,7 +243,7 @@ Transfer the whole directory, then install without index access:
 
 ```sh
 python -m pip install --no-index --find-links ./wheelhouse \
-  "xar-promo-toolchain[tts,visual,render]==0.2.0"
+  "xar-promo-toolchain[tts,visual,render]==0.2.1"
 ```
 
 The distribution requirement in this command is resolved only from the local
@@ -267,7 +267,7 @@ python -m xar_promo --version
 python -c "from importlib.resources import files; root=files('xar_promo').joinpath('schemas'); names=('install-contract-v1.json','promo-project-config-v1.schema.json','promo-run-manifest-v1.schema.json','phase2-capture-contract-v1.schema.json','capture-receipt-v1.schema.json','evidence-plan-v2.schema.json','evidence-bundle-v2.schema.json','claims-review-v1.schema.json'); missing=[name for name in names if not root.joinpath(name).is_file()]; raise SystemExit('missing installed resources: '+','.join(missing) if missing else 0)"
 ```
 
-Both version commands must print `xar-promo 0.2.0`. Verify all ten commands on
+Both version commands must print `xar-promo 0.2.1`. Verify all ten commands on
 Windows PowerShell:
 
 ```powershell
