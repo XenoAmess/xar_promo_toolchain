@@ -19,11 +19,14 @@ There is no `publish` or upload command. `audit`, `review`, and `signoff` are in
 
 ### 0.2.0 status
 
-The 0.2.0 source contract is prepared but unreleased. It adds generic capture
-receipts, evidence-plan/bundle v2, structural claims and review sidecars, and
-multi-track audio planning. A release tag must pass the compatibility,
-wheel/sdist, and installed-resource checks before any integration pins it as a
-published artifact.
+Version 0.2.0 is released on GitHub with generic capture receipts,
+evidence-plan/bundle v2, structural claims and review sidecars, and multi-track
+audio planning. The canonical wheel, source distribution, and `SHA256SUMS` are
+the assets in the [v0.2.0 GitHub Release](https://github.com/XenoAmess/xar_promo_toolchain/releases/tag/v0.2.0);
+the package is intentionally not published to PyPI or another public Python
+index. The release was cut from annotated tag `v0.2.0`; that tag is currently
+not cryptographically signed, so consumers requiring signed-tag provenance
+must apply their own additional trust gate.
 
 ## Release artifact handoff
 
@@ -31,10 +34,9 @@ The release workflow builds and checks the wheel and source distribution,
 validates the sdist contents, performs isolated installs of both artifacts,
 writes `SHA256SUMS`, and uploads the checked files as a GitHub Actions artifact.
 For a `v<version>` tag it also publishes those exact files as a GitHub Release;
-manual workflow runs remain artifact-only. Version 0.2.0 is prepared in the
-source metadata; it is not published until a matching `v0.2.0` tag passes the
-workflow. The workflow does not publish to PyPI or another package index, upload
-media, or start a game/recorder. See
+manual workflow runs remain artifact-only. The `v0.2.0` tag run passed the
+workflow and published the checked bytes above. The workflow does not publish
+to PyPI or another package index, upload media, or start a game/recorder. See
 [Installation and cross-machine delivery](docs/installation.md) for the exact
 artifact, reproducibility, and trust boundaries.
 

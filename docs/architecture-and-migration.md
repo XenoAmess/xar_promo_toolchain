@@ -143,7 +143,7 @@ A project supplies `required_span_ids` and `required_mark_labels`; this keeps ca
 
 The adapter does not launch CK3 or record the desktop. Those operations remain responsibilities of the CK3 acceptance/capture runner, which is a producer upstream of this toolchain.
 
-## Version 0.2 generic contracts (prepared, not yet tagged)
+## Version 0.2 generic contracts (released as `v0.2.0`)
 
 The 0.2 contract extraction is deliberately domain-neutral. A producer writes a
 `CaptureReceipt` containing exact source-file bindings, a media time base and

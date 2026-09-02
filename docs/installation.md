@@ -9,10 +9,11 @@ The machine-readable version of this contract is installed as
 `xar_promo/schemas/install-contract-v1.json`. It is part of both the wheel and
 sdist and can be read through `importlib.resources` without a source checkout.
 
-Version 0.2.0 is prepared in source metadata and is **not published to PyPI or another public Python index** until a matching signed tag is released. A command such as
-`pip install xar-promo-toolchain` is therefore not an available distribution
-path. Install the release wheel directly, install a downloaded local artifact,
-or build from a reviewed trusted source checkout:
+Version 0.2.0 is available as a GitHub Release but is **not published to PyPI or
+another public Python index**. A command such as `pip install
+xar-promo-toolchain` is therefore not an available distribution path. Verify
+the release `SHA256SUMS` before installing the wheel directly, installing a
+downloaded local artifact, or building from a reviewed trusted source checkout:
 
 ```text
 python -m pip install https://github.com/XenoAmess/xar_promo_toolchain/releases/download/v0.2.0/xar_promo_toolchain-0.2.0-py3-none-any.whl
@@ -221,8 +222,11 @@ the same target OS, CPU architecture, and Python minor version. This matters
 because Pillow wheels are platform-specific.
 
 Start from a trusted source checkout or a local wheel whose SHA-256 has already
-been checked as described above. There is no public-index copy of version 0.2.0
-for pip to download until a matching tagged release is published.
+been checked as described above. There is intentionally no public-index copy of
+version 0.2.0 for pip to download. The GitHub release assets are the canonical
+distribution; the published annotated tag is not GPG-signed, so environments
+that require cryptographic tag signatures must reject it or apply a separate
+trust policy.
 
 ```powershell
 New-Item -ItemType Directory -Force wheelhouse | Out-Null
