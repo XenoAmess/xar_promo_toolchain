@@ -212,4 +212,4 @@ __all__ = [
     "write_bound_media_probe",
 ]
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"

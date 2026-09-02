@@ -155,8 +155,9 @@ the project repository.
 
 All JSON schemas under `xar_promo/schemas/` are included by the wheel and source
 distribution. The installed `install-contract-v1.json` lists the exact
-resources and can be queried with `importlib.resources`. Version 0.2.0 is
-available from the [GitHub Release](https://github.com/XenoAmess/xar_promo_toolchain/releases/tag/v0.2.0)
+resources and can be queried with `importlib.resources`. Version 0.2.1, which
+includes the delayed-stem fade ordering fix, is available from the [GitHub
+Release](https://github.com/XenoAmess/xar_promo_toolchain/releases/tag/v0.2.1)
 after its tagged release workflow passed the complete compatibility and
 packaging checks. It is not published to PyPI; verify the release
 `SHA256SUMS` before pinning an artifact.

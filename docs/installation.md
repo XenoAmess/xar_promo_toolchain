@@ -1,6 +1,6 @@
 # Installation and cross-machine delivery
 
-This guide installs `xar-promo-toolchain` 0.2.0 into an isolated Python
+This guide installs `xar-promo-toolchain` 0.2.1 into an isolated Python
 environment on Windows, Linux, or macOS. Python 3.11 or later is required. The
 core package has no mandatory third-party Python dependency; media, visual, and
 live speech capabilities are opt-in.
@@ -9,14 +9,13 @@ The machine-readable version of this contract is installed as
 `xar_promo/schemas/install-contract-v1.json`. It is part of both the wheel and
 sdist and can be read through `importlib.resources` without a source checkout.
 
-Version 0.2.0 is available as a GitHub Release but is **not published to PyPI or
-another public Python index**. A command such as `pip install
+Version 0.2.1 is available as a GitHub Release but is **not published to PyPI or another public Python index**. A command such as `pip install
 xar-promo-toolchain` is therefore not an available distribution path. Verify
 the release `SHA256SUMS` before installing the wheel directly, installing a
 downloaded local artifact, or building from a reviewed trusted source checkout:
 
 ```text
-python -m pip install https://github.com/XenoAmess/xar_promo_toolchain/releases/download/v0.2.0/xar_promo_toolchain-0.2.0-py3-none-any.whl
+python -m pip install https://github.com/XenoAmess/xar_promo_toolchain/releases/download/v0.2.1/xar_promo_toolchain-0.2.1-py3-none-any.whl
 ```
 
 The standalone repository workflow

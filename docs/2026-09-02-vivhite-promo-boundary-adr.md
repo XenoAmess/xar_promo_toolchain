@@ -44,6 +44,8 @@ review checklist structures, technical audit, and export provenance. The
 Vivhite-specific modules remain in its repository and are consumed through its
 adapter.
 
-The local `0.2.0` wheel/sdist have been built and tested from the current
-working tree. Publication/tagging is intentionally a separate release action;
-the Vivhite run records the exact executable and package provenance it used.
+The original local `0.2.0` wheel/sdist were built and tested from the reviewed
+working tree. The follow-up `0.2.1` patch contains the delayed-stem fade fix;
+its tag/release is a separate immutable release action. A Vivhite run must
+record the exact executable, package version, commit, and artifact digest it
+actually used.

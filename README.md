@@ -1,6 +1,6 @@
 # XAR Promo Toolchain
 
-`xar-promo-toolchain` is a reusable foundation for promotional-video pipelines. Version `0.2.0` adds producer-neutral capture receipts, configurable evidence roles, structural claim/review bindings, and multi-track audio planning while retaining the separate project/run contracts, immutable process-material retention, provider-neutral TTS, dependency-injected media orchestration, automated-audit and human-review boundaries, and offline release-bundle export. A project supplies its own adapter, preset, and `PipelineComposer`; this is an orchestration toolchain, not a recorder, OCR engine, timeline editor, or upload service.
+`xar-promo-toolchain` is a reusable foundation for promotional-video pipelines. Version `0.2.0` adds producer-neutral capture receipts, configurable evidence roles, structural claim/review bindings, and multi-track audio planning; version `0.2.1` fixes delayed-stem fade ordering so narration remains audible after an output delay. The package retains separate project/run contracts, immutable process-material retention, provider-neutral TTS, dependency-injected media orchestration, automated-audit and human-review boundaries, and offline release-bundle export. A project supplies its own adapter, preset, and `PipelineComposer`; this is an orchestration toolchain, not a recorder, OCR engine, timeline editor, or upload service.
 
 The real CLI has ten commands:
 
@@ -39,6 +39,13 @@ workflow and published the checked bytes above. The workflow does not publish
 to PyPI or another package index, upload media, or start a game/recorder. See
 [Installation and cross-machine delivery](docs/installation.md) for the exact
 artifact, reproducibility, and trust boundaries.
+
+### 0.2.1 status
+
+Version 0.2.1 is the patch release for delayed-stem fade ordering. It is cut
+from the `v0.2.1` tag and is published as a GitHub Release after the same
+packaging and compatibility workflow passes. The release is not published to
+PyPI; consumers should verify its `SHA256SUMS` and pin the exact artifact.
 
 ## Install and inspect
 
