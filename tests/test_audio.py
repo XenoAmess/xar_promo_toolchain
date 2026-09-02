@@ -186,7 +186,33 @@ class AudioPlanTests(unittest.TestCase):
             duration_seconds=2,
         )
         graph = plan_audio_mix(spec).filtergraph
-        self.assertIn("afade=t=out:st=1.750000:d=0.250000", graph)
+        # The fade is emitted before the 0.5 s output delay; 1.25 s on the
+        # source timeline therefore lands at 1.75 s in the final mix.
+        self.assertIn("afade=t=out:st=1.250000:d=0.250000", graph)
+
+    def test_delayed_stem_fades_before_delay_on_source_timeline(self) -> None:
+        """A delay must not make afade consume the inserted silence."""
+
+        spec = AudioMixSpec(
+            (
+                AudioStem(
+                    "voice",
+                    Path("voice.wav"),
+                    trim_duration_seconds=4,
+                    delay_seconds=0.5,
+                    fade_in_seconds=0.25,
+                    fade_out_seconds=0.5,
+                ),
+            ),
+            duration_seconds=8,
+        )
+        graph = plan_audio_mix(spec).filtergraph
+        fade_in = "afade=t=in:st=0.000000:d=0.250000"
+        fade_out = "afade=t=out:st=3.500000:d=0.500000"
+        delay = "adelay=500.000000|500.000000"
+        self.assertLess(graph.index(fade_in), graph.index(delay))
+        self.assertLess(graph.index(fade_out), graph.index(delay))
+        self.assertNotIn("afade=t=in:st=0.500000", graph)
 
     def test_multichannel_delay_uses_explicit_layout_and_every_channel(self) -> None:
         spec = AudioMixSpec(

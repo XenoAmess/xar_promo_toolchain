@@ -208,9 +208,10 @@ class AudioStem:
     """One source audio file and deterministic transformations for it.
 
     ``trim_start_seconds`` and ``trim_duration_seconds`` address the source
-    timeline.  ``delay_seconds`` and duck windows address the output timeline.
-    A missing trim duration means the stem is allowed to run until the mix
-    duration; it is padded or clipped by the final mix graph.
+    timeline.  Fades are also applied on that source timeline, while
+    ``delay_seconds`` and duck windows address the output timeline.  A missing
+    trim duration means the stem is allowed to run until the mix duration; it
+    is padded or clipped by the final mix graph.
     """
 
     stem_id: str
@@ -613,7 +614,8 @@ def _build_filtergraph(
             ),
             "asetpts=PTS-STARTPTS",
         ]
-        if stem.delay_seconds > 0.0:
+        has_delay = stem.delay_seconds > 0.0
+        if has_delay:
             # Normalize the source to the requested output channel layout
             # *before* delaying it.  ``adelay`` applies one value per source
             # channel; delaying first and downmixing later leaves any source
@@ -627,6 +629,40 @@ def _build_filtergraph(
                     _channel_format(channel_count),
                 )
             )
+        gain_filter = (
+            f"volume={_format_db(stem.gain_db)}dB" if stem.gain_db != 0.0 else None
+        )
+        fade_filters: list[str] = []
+        if stem.fade_in_seconds > 0.0:
+            fade_filters.append(
+                "afade=t=in:"
+                # Fades run before the output delay, so their start is always
+                # relative to the trimmed source.  Applying ``afade`` after
+                # ``adelay`` with ``st=0`` fades the inserted silence instead
+                # of the narration; keeping the fade pre-delay also avoids
+                # relying on version-specific PTS behaviour in ``adelay``.
+                "st=0.000000:"
+                f"d={_format_seconds(stem.fade_in_seconds)}"
+            )
+        if stem.fade_out_seconds > 0.0:
+            # The rendered stem ends at the earlier of its declared trim end
+            # and the mix boundary (after delay).  Using the raw trim duration
+            # here would place the fade beyond the output and silently disable
+            # it whenever a long source is clipped by the target duration.
+            available = max(0.0, target - stem.delay_seconds)
+            if stem.trim_duration_seconds is not None:
+                available = min(available, stem.trim_duration_seconds)
+            # This filter is emitted before ``adelay`` (see above), therefore
+            # ``st`` is on the trimmed source timeline rather than the final
+            # mix timeline.  Keep the delay in the available-duration check so
+            # a fade cannot extend beyond the render boundary.
+            fade_start = max(0.0, available - stem.fade_out_seconds)
+            fade_filters.append(
+                "afade=t=out:"
+                f"st={_format_seconds(fade_start)}:"
+                f"d={_format_seconds(stem.fade_out_seconds)}"
+            )
+        if has_delay:
             # ``adelay`` accepts one millisecond value per source channel.
             # Since the preceding explicit ``aformat`` establishes the target
             # layout, the requested count is also the exact number of values
@@ -640,35 +676,26 @@ def _build_filtergraph(
                     f"audio stem {stem.stem_id!r} delay_seconds is too large for FFmpeg"
                 )
             delay_value = _format_seconds(delay_milliseconds)
-            filters.append(
-                "adelay=" + "|".join([delay_value] * delay_channel_count)
-            )
-        if stem.gain_db != 0.0:
-            filters.append(f"volume={_format_db(stem.gain_db)}dB")
-        if stem.fade_in_seconds > 0.0:
-            filters.append(
-                "afade=t=in:"
-                f"st={_format_seconds(stem.delay_seconds)}:"
-                f"d={_format_seconds(stem.fade_in_seconds)}"
-            )
-        if stem.fade_out_seconds > 0.0:
-            # The rendered stem ends at the earlier of its declared trim end
-            # and the mix boundary (after delay).  Using the raw trim duration
-            # here would place the fade beyond the output and silently disable
-            # it whenever a long source is clipped by the target duration.
-            available = max(0.0, target - stem.delay_seconds)
-            if stem.trim_duration_seconds is not None:
-                available = min(available, stem.trim_duration_seconds)
-            effective_end = stem.delay_seconds + available
-            fade_start = max(
-                stem.delay_seconds,
-                effective_end - stem.fade_out_seconds,
-            )
-            filters.append(
-                "afade=t=out:"
-                f"st={_format_seconds(fade_start)}:"
-                f"d={_format_seconds(stem.fade_out_seconds)}"
-            )
+            delay_filter = "adelay=" + "|".join([delay_value] * delay_channel_count)
+            if fade_filters:
+                # Keep all source-timeline operations together before the
+                # output delay.  This is the only ordering change needed for
+                # delayed stems that request fades.
+                if gain_filter is not None:
+                    filters.append(gain_filter)
+                filters.extend(fade_filters)
+                filters.append(delay_filter)
+            else:
+                # Preserve the established adelay -> gain ordering for callers
+                # that do not use fades (and therefore retain byte-compatible
+                # plans for that common case).
+                filters.append(delay_filter)
+                if gain_filter is not None:
+                    filters.append(gain_filter)
+        else:
+            if gain_filter is not None:
+                filters.append(gain_filter)
+            filters.extend(fade_filters)
         for window in stem.duck_windows:
             # Quoting the enable expression is libavfilter syntax, not shell
             # quoting; CommandSpec still executes with shell=False.

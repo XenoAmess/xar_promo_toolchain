@@ -119,6 +119,11 @@ the older FFmpeg builds used by supported integrations. Unsupported channel
 counts are rejected during planning rather than silently downmixed. The
 planner records the resulting FFmpeg invocation/filter graph for auditability.
 
+Stem fades are evaluated on the trimmed source timeline and emitted before an
+output delay. This keeps a delayed narration's fade attached to its audio
+instead of fading the silence inserted by `adelay`; duck windows remain on the
+final output timeline.
+
 `AudioMixSpec.normalize` is an explicit boolean passed to FFmpeg's `amix`
 filter and defaults to `true` for compatibility. Set it to `false` when stems
 have already been levelled and should not be divided by the number of inputs;
