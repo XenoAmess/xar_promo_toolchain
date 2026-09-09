@@ -9,6 +9,16 @@ The machine-readable version of this contract is installed as
 `xar_promo/schemas/install-contract-v1.json`. It is part of both the wheel and
 sdist and can be read through `importlib.resources` without a source checkout.
 
+Codex workers also require the repository-pinned `suno-engineer` skill for
+music prompt authoring. On every machine, run
+`python scripts/ensure_suno_engineer_skill.py` before repository work; the
+idempotent bootstrap installs the missing skill from commit
+`b1b11a67e8ce5dd07691b68cf736cff8e4c55c87` and verifies an existing copy
+without network access. This authoring dependency is intentionally separate
+from the wheel and its Python environment. See
+[Music authoring environment](music-authoring.md) for the exact source,
+cross-platform commands, offline check, and capability boundary.
+
 Version 0.2.1 is available as a GitHub Release but is **not published to PyPI or another public Python index**. A command such as `pip install
 xar-promo-toolchain` is therefore not an available distribution path. Verify
 the release `SHA256SUMS` before installing the wheel directly, installing a

@@ -20,6 +20,14 @@ not a CK3 mod and must remain usable without a checkout of the parent
 
 ## Development
 
+- On every machine, immediately after reading this file and before beginning
+  repository work, run `python scripts/ensure_suno_engineer_skill.py` (or
+  `py -3 scripts/ensure_suno_engineer_skill.py` on Windows). This idempotently
+  installs the required `suno-engineer` Codex skill from pinned upstream commit
+  `b1b11a67e8ce5dd07691b68cf736cff8e4c55c87` when it is missing and verifies
+  exact file hashes when it is present. Do not continue after a conflict or
+  verification failure. The skill is a Codex authoring dependency, not a
+  Python package/runtime dependency; see `docs/music-authoring.md`.
 - Requires Python 3.11 or newer.  Install editable code with
   `python -m pip install -e .` and optional rendering/TTS extras only when
   needed (`.[visual,tts]`).
@@ -43,4 +51,3 @@ not a CK3 mod and must remain usable without a checkout of the parent
   repository unless the owner gives a different instruction.
 - Do not add parent-repository paths, CK3 caches, credentials, generated build
   directories, or large untracked media to the release by accident.
-

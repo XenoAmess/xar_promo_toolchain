@@ -64,6 +64,9 @@ dependencies, offline wheelhouses, verification, upgrades, and uninstall, see
 [Installation and cross-machine delivery](docs/installation.md). Automation can
 read the installed machine contract at
 `xar_promo/schemas/install-contract-v1.json` through `importlib.resources`.
+Codex contributors must also run the idempotent, repository-pinned
+`scripts/ensure_suno_engineer_skill.py` bootstrap described in
+[Music authoring environment](docs/music-authoring.md) once per machine.
 
 ```powershell
 py -m pip install -e .
