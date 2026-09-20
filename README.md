@@ -255,6 +255,13 @@ Preservation copies; it never moves, edits, or deletes source material. Failed a
 
 See [Architecture and migration](docs/architecture-and-migration.md), [CLI and manifest v1](docs/cli-and-manifest-v1.md), [Pipeline composition](docs/pipeline-composition.md), [Human review and sign-off](docs/review-and-human-signoff.md), [Export and release bundles](docs/export-and-release-bundle.md), [Migrating existing builders](docs/migrating-existing-builders.md), and [Troubleshooting](docs/troubleshooting.md).
 
+## Contributing
+
+External contributors must read [CONTRIBUTING.md](CONTRIBUTING.md) and accept
+the [Contributor License Agreement](CLA.md) on each pull request. The required
+merge status is `CLA / signed`; its repository-owned implementation and
+operational boundary are documented in [docs/cla-bot.md](docs/cla-bot.md).
+
 ## Test
 
 ```powershell

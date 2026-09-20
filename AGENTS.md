@@ -51,3 +51,17 @@ not a CK3 mod and must remain usable without a checkout of the parent
   repository unless the owner gives a different instruction.
 - Do not add parent-repository paths, CK3 caches, credentials, generated build
   directories, or large untracked media to the release by accident.
+
+## External contributions and CLA
+
+- External contributions must follow root `CLA.md` and `CONTRIBUTING.md`. Every
+  account identified by the checker must post the configured exact acceptance
+  statement on its pull request.
+- `CLA / signed` is a required status on `main`. The privileged CLA workflow
+  may check out only trusted default-branch files; it must never check out,
+  import, build, or execute pull-request code or contributor-controlled
+  artifacts.
+- Maintainers may apply `cla:manual` only after verifying entity, offline, or
+  otherwise unmapped signature evidence. See `docs/cla-bot.md`.
+- A substantive CLA change requires a new version and synchronized changes to
+  `CLA.md`, `.github/cla-config.json`, `CONTRIBUTING.md`, and checker tests.
