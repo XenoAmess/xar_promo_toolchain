@@ -49,7 +49,7 @@ class V020ContractIntegrationTests(unittest.TestCase):
         contract = json.loads(
             (SCHEMA_ROOT / "install-contract-v1.json").read_text(encoding="utf-8")
         )
-        self.assertEqual("0.2.1", contract["package"]["version"])
+        self.assertEqual("0.3.0", contract["package"]["version"])
         self.assertEqual(
             tuple(f"xar_promo/schemas/{name}" for name in EXPECTED_RESOURCES),
             tuple(contract["artifacts"]["installed_resources"]),
@@ -57,7 +57,7 @@ class V020ContractIntegrationTests(unittest.TestCase):
 
         with (PROJECT_ROOT / "pyproject.toml").open("rb") as handle:
             pyproject = tomllib.load(handle)
-        self.assertEqual("0.2.1", pyproject["project"]["version"])
+        self.assertEqual("0.3.0", pyproject["project"]["version"])
         self.assertIn("schemas/*.json", pyproject["tool"]["setuptools"]["package-data"]["xar_promo"])
 
         # Source-tree check plus importlib.resources check catches a package

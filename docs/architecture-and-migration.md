@@ -2,6 +2,12 @@
 
 ## Scope and current boundary
 
+The `stall_edl` library module is a producer-neutral metadata planner. It keeps
+source gaps and unclosed waits visible and produces estimated offsets only.
+Runtime collectors, actual-progress qualification, recording launch hooks and
+final PTS/pixel approval remain project-owned. It does not turn this package
+into a recorder or a film-approval service; see [stall decisions](stall-edit-decisions.md).
+
 `xar_promo_toolchain` is the reusable metadata, evidence-retention, producer-neutral capture receipt, configurable evidence-role, claims-binding, TTS, layout, media-process, pipeline, audit, review, and offline-export foundation for promotional-video pipelines. Its ten-command CLI covers the project/run lifecycle plus dependency-injected plan/build, automated audit, pending human review, explicit sign-off, and local release-bundle export. Projects still own their adapter, preset, `PipelineComposer`, executables, and content policy; the package is not a recorder, OCR engine, timeline editor, or publication service.
 
 This is a standalone repository. The `tools/` and `mod_zhongguo_style/` paths

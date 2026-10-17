@@ -1,5 +1,13 @@
 # XAR Promo Toolchain
 
+Version `0.3.0` adds producer-neutral, metadata-only stall edit decisions through
+the library module `xar_promo.stall_edl`. The default retains two seconds at each
+end and speeds the recorded middle to at most four seconds. Source gaps, open
+waits and later notices remain explicit. This is an edit recipe, not an encoder
+or a film approval; wallclock positions still require actual media PTS alignment
+and project-owned visual review before rendering. The ten-command CLI is
+unchanged. See [stall decisions](docs/stall-edit-decisions.md).
+
 `xar-promo-toolchain` is a reusable foundation for promotional-video pipelines. Version `0.2.0` adds producer-neutral capture receipts, configurable evidence roles, structural claim/review bindings, and multi-track audio planning; version `0.2.1` fixes delayed-stem fade ordering so narration remains audible after an output delay. The package retains separate project/run contracts, immutable process-material retention, provider-neutral TTS, dependency-injected media orchestration, automated-audit and human-review boundaries, and offline release-bundle export. A project supplies its own adapter, preset, and `PipelineComposer`; this is an orchestration toolchain, not a recorder, OCR engine, timeline editor, or upload service.
 
 The real CLI has ten commands:

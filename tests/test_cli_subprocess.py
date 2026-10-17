@@ -181,7 +181,7 @@ class CliSubprocessWorkflowTests(unittest.TestCase):
         )
         module_version = self.invoke("module", "--version").stdout.strip()
         console_version = self.invoke("console", "--version").stdout.strip()
-        self.assertEqual("xar-promo 0.2.1", module_version)
+        self.assertEqual("xar-promo 0.3.0", module_version)
         self.assertEqual(module_version, console_version)
 
         initialized = self.invoke(
