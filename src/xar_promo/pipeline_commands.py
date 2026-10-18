@@ -343,7 +343,7 @@ def _preserve_retained_materials(
     stdout = {path.resolve() for path in failure.stdout_paths}
     stderr = {path.resolve() for path in failure.stderr_paths}
     partial = {path.resolve() for path in failure.partial_paths}
-    records: list[SourceRecord] = []
+    records: dict[str, SourceRecord] = {}
     seen: set[Path] = set()
     for raw_path in failure.retained_paths:
         path = raw_path.resolve()
@@ -359,18 +359,20 @@ def _preserve_retained_materials(
         else:
             role = "failure-material"
         digest = sha256_file(path)
-        records.append(
-            preserve_artifact(
-                run_path,
-                path,
-                artifact_id=_retained_identity(path, role=role, digest=digest),
-                collection="derived",
-                role=role,
-                label=f"Retained {role}: {path.name}",
-                media_type=None,
-            )
+        artifact_id = _retained_identity(path, role=role, digest=digest)
+        record = preserve_artifact(
+            run_path,
+            path,
+            artifact_id=artifact_id,
+            collection="derived",
+            role=role,
+            label=f"Retained {role}: {path.name}",
+            media_type=None,
         )
-    return tuple(records)
+        # Validate every source, but reference an identical immutable binding
+        # only once even when several command directories contain those bytes.
+        records.setdefault(record.artifact_id, record)
+    return tuple(records.values())
 
 
 def handle_build(

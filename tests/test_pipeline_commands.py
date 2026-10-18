@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ from xar_promo.evidence import (  # noqa: E402
     write_sampling_plan,
 )
 from xar_promo.model import ProjectConfig, new_project_config  # noqa: E402
+from xar_promo.media import probe_media  # noqa: E402
 from xar_promo.operations import record_signoff, start_run  # noqa: E402
 from xar_promo.pipeline import (  # noqa: E402
     PipelineDependencies,
@@ -424,6 +426,81 @@ class PipelineCommandTests(unittest.TestCase):
         self.assertEqual(1, len(diagnostics))
         self.assertEqual("failed", diagnostics[0].status)
         self.assertGreaterEqual(len(diagnostics[0].artifacts), 3)
+        self.assertEqual((), run.signoffs)
+
+    def test_reused_visual_probe_and_duplicate_failure_sidecars_keep_primary_error(self) -> None:
+        workdir = self.root / "reused-visual-build"
+        other_visual = self.visual.with_name("other.png")
+        other_visual.write_bytes(b"different prepared visual")
+        original = self._composer(runner=_CommandRunner(fail_first=True))
+        probes: list[Path] = []
+
+        def visual_probe(path: Path) -> VisualProbeResult:
+            probes.append(path)
+
+            def runner(spec: CommandSpec, *, audit_directory: Path) -> CommandResult:
+                return run_command(
+                    spec,
+                    audit_directory=audit_directory,
+                    run=lambda argv, **_: subprocess.CompletedProcess(
+                        argv, 0,
+                        stdout=json.dumps({"streams": [{
+                            "index": 0, "codec_type": "video", "width": 640, "height": 360,
+                        }]}),
+                        stderr="",
+                    ),
+                )
+
+            observed = probe_media(
+                "fake-ffprobe", path,
+                audit_directory=workdir / "audit" / "probe" / path.stem,
+                command_runner=runner,
+            ).video_streams[0]
+            return VisualProbeResult("image/png", observed.width, observed.height)
+
+        def composer(*args: Any, **kwargs: Any) -> PipelineInvocation:
+            invocation = original(*args, **kwargs)
+            first = invocation.draft.segments[0]
+            shared = replace(
+                first, segment_id="cue-002",
+                visual_source=replace(first.visual_source, source_id="visual.cue-002"),
+            )
+            distinct = replace(
+                first, segment_id="cue-003",
+                visual_source=replace(
+                    first.visual_source, source_id="visual.cue-003", path=other_visual,
+                ),
+            )
+            return replace(
+                invocation,
+                draft=replace(invocation.draft, segments=(first, shared, distinct)),
+                dependencies=replace(invocation.dependencies, visual_probe=visual_probe),
+            )
+
+        outcome = handle_build(
+            self.run_path, workdir=workdir, registry=self.registry, composer=composer,
+        )
+        self.assertEqual(2, outcome.exit_status)
+        self.assertEqual("segment-render", outcome.pipeline_result.failure.phase)
+        self.assertEqual("CommandFailedError", outcome.pipeline_result.failure.exception_type)
+        self.assertIn("segment-render", outcome.failure.message)
+        self.assertNotIn("artifact ids must be unique", outcome.failure.message)
+        self.assertEqual([self.visual.resolve(), other_visual.resolve()], probes)
+        first_audit = workdir / "audit" / "probe" / self.visual.stem
+        second_audit = workdir / "audit" / "probe" / other_visual.stem
+        self.assertEqual(
+            first_audit.joinpath("stderr.txt").read_bytes(),
+            second_audit.joinpath("stderr.txt").read_bytes(),
+        )
+        self.assertEqual(2, len(list((workdir / "audit" / "probe").glob("*/command.json"))))
+        run = load_document(self.run_path).run
+        visuals = {r.artifact_id: r for r in run.artifacts if r.role == "visual-input"}
+        self.assertEqual(visuals["visual.cue-001"].sha256, visuals["visual.cue-002"].sha256)
+        diagnostics = next(p for p in phase_records_from_run(run) if p.phase_id == "build.failure-materials")
+        ids = [r.artifact_id for r in diagnostics.artifacts]
+        self.assertEqual(len(ids), len(set(ids)))
+        records = {r.artifact_id: r for r in run.artifacts}
+        self.assertTrue(any(records[r.artifact_id].role == "partial-output" for r in diagnostics.artifacts))
         self.assertEqual((), run.signoffs)
 
     def _evidence_bundle(self, subject_path: Path) -> Path:

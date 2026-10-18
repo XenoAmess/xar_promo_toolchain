@@ -37,6 +37,7 @@ from .render import (
 from .sources import (
     PreparedVisual,
     VisualProbe,
+    VisualProbeResult,
     VisualResolver,
     VisualSource,
     prepare_visual,
@@ -679,12 +680,14 @@ def _resolve_visual(
     segment: SegmentDraft,
     dependencies: PipelineDependencies,
     workdir: Path,
+    probe_cache: dict[tuple[Path, int, str], VisualProbeResult],
 ) -> PreparedVisual:
     return prepare_visual(
         segment.visual_source,
         workdir=workdir,
         resolver=dependencies.visual_resolver,
         probe=dependencies.visual_probe,
+        probe_cache=probe_cache,
     )
 
 
@@ -906,9 +909,10 @@ def run_pipeline(
 
     visuals: dict[str, PreparedVisual] = {}
     visual_records: list[PipelineArtifactRecord] = []
+    probe_cache: dict[tuple[Path, int, str], VisualProbeResult] = {}
     try:
         for segment in draft.segments:
-            visual = _resolve_visual(segment, dependencies, attempt_root)
+            visual = _resolve_visual(segment, dependencies, attempt_root, probe_cache)
             visuals[segment.segment_id] = visual
             record = PipelineArtifactRecord.from_path(
                 visual.path,

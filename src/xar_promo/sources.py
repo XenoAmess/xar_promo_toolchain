@@ -322,13 +322,16 @@ def prepare_visual(
     workdir: Path,
     resolver: VisualResolver | None,
     probe: VisualProbe,
+    probe_cache: dict[tuple[Path, int, str], VisualProbeResult] | None = None,
 ) -> PreparedVisual:
     """Resolve, inspect, and bind one visual for a build.
 
     Existing prepared sources bypass ``resolver``.  Resolver-backed sources
     must return the exact path declared by the validation plan.  In both cases
     the returned file must exist before its bytes, media type, dimensions and
-    digest are captured.
+    digest are captured. A caller may share ``probe_cache`` within one build to
+    reuse a successful inspection of the same canonical path and exact bytes.
+    Each source still receives its own binding, kind check, origin and metadata.
     """
 
     planned = validate_visual_source(source, workdir=workdir, validate_only=True)
@@ -356,12 +359,19 @@ def prepare_visual(
         actual = planned
 
     _require_file(actual, source.source_id)
-    observation = _inspect(source, actual, probe)
     size = actual.stat().st_size
     if size < 1:
         raise VisualBindingError(
             f"visual source {source.source_id!r} resolved to an empty file: {actual}"
         )
+    digest = _sha256(actual)
+    key = (actual, size, digest)
+    cached = None if probe_cache is None else probe_cache.get(key)
+    observation = _inspect(
+        source, actual, probe if cached is None else lambda _path: cached
+    )
+    if probe_cache is not None:
+        probe_cache[key] = observation
     return PreparedVisual(
         source_id=source.source_id,
         kind=source.kind,
@@ -369,7 +379,7 @@ def prepare_visual(
         media_type=observation.media_type,
         origin=source.origin,
         bytes=size,
-        sha256=_sha256(actual),
+        sha256=digest,
         width=observation.width,
         height=observation.height,
         metadata=source.metadata,
