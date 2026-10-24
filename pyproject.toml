@@ -26,8 +26,8 @@ Issues = "https://github.com/XenoAmess/xar_promo_toolchain/issues"
 
 [project.optional-dependencies]
 tts = ["edge-tts==7.2.8"]
-visual = ["Pillow==12.3.0"]
-render = ["Pillow==12.3.0"]
+visual = ["Pillow==13.0.0"]
+render = ["Pillow==13.0.0"]
 
 [project.scripts]
 xar-promo = "xar_promo.cli:main"
